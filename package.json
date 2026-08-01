@@ -4,7 +4,8 @@
   "type": "module",
   "packageManager": "pnpm@9.15.0",
   "scripts": {
-    "build": "pnpm --recursive run build",
+    "build": "pnpm --recursive run build && pnpm run build:action",
+    "build:action": "tsup --config tsup.action.config.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",

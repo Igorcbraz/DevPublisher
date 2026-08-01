@@ -25,5 +25,5 @@ inputs:
     required: false
 
 runs:
-  using: 'node22'
-  main: 'packages/cli/dist/index.js'
+  using: 'node20'
+  main: 'dist/index.js'
