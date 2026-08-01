@@ -17,9 +17,6 @@ inputs:
     description: 'Comma-separated list of target platforms (e.g. devto, hashnode)'
     required: false
     default: 'devto'
-  devto_token:
-    description: 'Dev.to API Key'
-    required: false
   config:
     description: 'Path to devpublisher.yml config file'
     required: false

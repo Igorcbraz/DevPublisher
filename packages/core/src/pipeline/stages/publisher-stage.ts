@@ -60,12 +60,24 @@ export class PublisherStage implements PipelineStage {
           let result: PlatformResult;
 
           if (platformState && platformState.externalId) {
-            // Already published -> update
-            ctx.logger.info(`Updating article '${post.slug}' on ${plugin.name} (ID: ${platformState.externalId})...`);
-            result = await publisher.update(post, platformState.externalId, {
-              apiKey: platformConfig.apiKey,
-              config: platformConfig
-            });
+            if (platformState.checksum === post.checksum) {
+              ctx.logger.info(`Skipping unchanged article '${post.slug}' on ${plugin.name}...`);
+              result = {
+                platformId,
+                platformName: plugin.name,
+                status: 'skipped',
+                externalId: platformState.externalId,
+                url: platformState.url,
+                message: 'Article content has not changed since the last publication'
+              };
+            } else {
+              // Already published with changed content -> update
+              ctx.logger.info(`Updating article '${post.slug}' on ${plugin.name} (ID: ${platformState.externalId})...`);
+              result = await publisher.update(post, platformState.externalId, {
+                apiKey: platformConfig.apiKey,
+                config: platformConfig
+              });
+            }
           } else {
             // New article -> publish
             ctx.logger.info(`Publishing article '${post.slug}' to ${plugin.name}...`);

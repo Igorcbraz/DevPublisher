@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { DevPublisherEngine } from '../engine.js';
 import { PublisherPlugin, Publisher } from '../registry/publisher-registry.js';
 import { BlogPost } from '../models/blog-post.js';
@@ -49,8 +49,26 @@ class MockPublisherPlugin implements PublisherPlugin {
   readonly version = '1.0.0';
   readonly type = 'publisher';
 
+  publishCalls = 0;
+  updateCalls = 0;
+
   createPublisher(): Publisher {
-    return new MockPublisher();
+    const publisher = new MockPublisher();
+    const plugin = this;
+    return {
+      platformId: publisher.platformId,
+      platformName: publisher.platformName,
+      validate: publisher.validate.bind(publisher),
+      async publish(post: BlogPost): Promise<PlatformResult> {
+        plugin.publishCalls += 1;
+        return publisher.publish(post);
+      },
+      async update(post: BlogPost, externalId: string): Promise<PlatformResult> {
+        plugin.updateCalls += 1;
+        return publisher.update(post, externalId);
+      },
+      delete: publisher.delete.bind(publisher)
+    };
   }
 }
 
@@ -59,10 +77,11 @@ describe('DevPublisher Pipeline Engine', () => {
     const engine = new DevPublisherEngine({
       configOverrides: {
         source: {
-          folder: 'examples/content/blog'
+          folder: 'examples/content/blog',
+          match: '**/*.md'
         },
         platforms: {
-          'mock-platform': { enabled: true }
+          'mock-platform': { enabled: true, options: {} }
         }
       }
     });
@@ -79,5 +98,59 @@ describe('DevPublisher Pipeline Engine', () => {
     expect(result.failedArticles).toBe(0);
     expect(result.results[0]?.platformResults[0]?.status).toBe('published');
     expect(result.results[0]?.platformResults[0]?.externalId).toBe('mock-123');
+  });
+
+  it('should skip unchanged articles that have already been published', async () => {
+    const engine = new DevPublisherEngine({
+      configOverrides: {
+        source: {
+          folder: 'examples/content/blog',
+          match: '**/*.md'
+        },
+        platforms: {
+          'mock-platform': { enabled: true, options: {} }
+        }
+      }
+    });
+    const plugin = new MockPublisherPlugin();
+    const tracking = new MemoryTrackingProvider();
+
+    engine.use(plugin);
+    await engine.run({ tracking, cache: new MemoryCacheProvider() });
+    const secondRun = await engine.run({ tracking, cache: new MemoryCacheProvider() });
+
+    expect(plugin.publishCalls).toBeGreaterThan(0);
+    expect(plugin.updateCalls).toBe(0);
+    expect(secondRun.results[0]?.platformResults[0]?.status).toBe('skipped');
+  });
+
+  it('should update an article whose content has changed since publication', async () => {
+    const engine = new DevPublisherEngine({
+      configOverrides: {
+        source: {
+          folder: 'examples/content/blog',
+          match: '**/*.md'
+        },
+        platforms: {
+          'mock-platform': { enabled: true, options: {} }
+        }
+      }
+    });
+    const plugin = new MockPublisherPlugin();
+    const tracking = new MemoryTrackingProvider();
+
+    await tracking.setPlatformState('hello-world-devpublisher', 'outdated-checksum', 'mock-platform', {
+      externalId: 'mock-123',
+      url: 'https://mock.com/hello-world-devpublisher',
+      publishedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    });
+    engine.use(plugin);
+
+    const result = await engine.run({ tracking, cache: new MemoryCacheProvider() });
+
+    expect(plugin.publishCalls).toBe(0);
+    expect(plugin.updateCalls).toBe(1);
+    expect(result.results[0]?.platformResults[0]?.status).toBe('updated');
   });
 });

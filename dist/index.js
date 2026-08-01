@@ -11260,11 +11260,23 @@ var PublisherStage = class {
           const platformState = articleState?.platforms[platformId];
           let result;
           if (platformState && platformState.externalId) {
-            ctx.logger.info(`Updating article '${post.slug}' on ${plugin.name} (ID: ${platformState.externalId})...`);
-            result = await publisher.update(post, platformState.externalId, {
-              apiKey: platformConfig.apiKey,
-              config: platformConfig
-            });
+            if (platformState.checksum === post.checksum) {
+              ctx.logger.info(`Skipping unchanged article '${post.slug}' on ${plugin.name}...`);
+              result = {
+                platformId,
+                platformName: plugin.name,
+                status: "skipped",
+                externalId: platformState.externalId,
+                url: platformState.url,
+                message: "Article content has not changed since the last publication"
+              };
+            } else {
+              ctx.logger.info(`Updating article '${post.slug}' on ${plugin.name} (ID: ${platformState.externalId})...`);
+              result = await publisher.update(post, platformState.externalId, {
+                apiKey: platformConfig.apiKey,
+                config: platformConfig
+              });
+            }
           } else {
             ctx.logger.info(`Publishing article '${post.slug}' to ${plugin.name}...`);
             result = await publisher.publish(post, {
@@ -11870,10 +11882,6 @@ function getActionArguments() {
   const folder = process.env.INPUT_FOLDER?.trim();
   const platforms = process.env.INPUT_PLATFORMS?.trim();
   const config = process.env.INPUT_CONFIG?.trim();
-  const devtoToken = process.env.INPUT_DEVTO_TOKEN?.trim();
-  if (devtoToken && !process.env.DEVTO_API_KEY) {
-    process.env.DEVTO_API_KEY = devtoToken;
-  }
   const args = ["node", "devpublisher", "publish", file || folder || "content/blog"];
   if (platforms) args.push("--platforms", platforms);
   if (config) args.push("--config", config);

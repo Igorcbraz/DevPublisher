@@ -172,12 +172,6 @@ function getActionArguments(): string[] {
   const folder = process.env.INPUT_FOLDER?.trim();
   const platforms = process.env.INPUT_PLATFORMS?.trim();
   const config = process.env.INPUT_CONFIG?.trim();
-  const devtoToken = process.env.INPUT_DEVTO_TOKEN?.trim();
-
-  if (devtoToken && !process.env.DEVTO_API_KEY) {
-    process.env.DEVTO_API_KEY = devtoToken;
-  }
-
   const args = ['node', 'devpublisher', 'publish', file || folder || 'content/blog'];
   if (platforms) args.push('--platforms', platforms);
   if (config) args.push('--config', config);
