@@ -1,3 +1,4 @@
+import * as path from 'node:path';
 import { PipelineStage } from '../stage.js';
 import { ExecutionContext } from '../context.js';
 import { RegistryManager } from '../../registry/registry-manager.js';
@@ -23,10 +24,11 @@ export class PublisherStage implements PipelineStage {
       const valRes = ctx.validationResults.find((r) => r.filePath === post.filePath);
       if (valRes && !valRes.valid) {
         ctx.logger.warn(`Skipping publication for invalid article: ${post.filePath}`);
+        const fileName = path.basename(post.filePath, path.extname(post.filePath));
         ctx.results.push({
           filePath: post.filePath,
-          slug: post.slug,
-          title: post.title,
+          slug: post.frontmatter.slug || fileName,
+          title: post.frontmatter.title || fileName,
           platformResults: [],
           success: false
         });

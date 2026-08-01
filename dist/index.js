@@ -971,7 +971,7 @@ var require_command = __commonJS({
     "use strict";
     var EventEmitter2 = require("events").EventEmitter;
     var childProcess = require("child_process");
-    var path6 = require("path");
+    var path7 = require("path");
     var fs6 = require("fs");
     var process2 = require("process");
     var { Argument: Argument2, humanReadableArgName } = require_argument();
@@ -1904,9 +1904,9 @@ Expecting one of '${allowedValues.join("', '")}'`);
         let launchWithNode = false;
         const sourceExt = [".js", ".ts", ".tsx", ".mjs", ".cjs"];
         function findFile(baseDir, baseName) {
-          const localBin = path6.resolve(baseDir, baseName);
+          const localBin = path7.resolve(baseDir, baseName);
           if (fs6.existsSync(localBin)) return localBin;
-          if (sourceExt.includes(path6.extname(baseName))) return void 0;
+          if (sourceExt.includes(path7.extname(baseName))) return void 0;
           const foundExt = sourceExt.find(
             (ext) => fs6.existsSync(`${localBin}${ext}`)
           );
@@ -1924,17 +1924,17 @@ Expecting one of '${allowedValues.join("', '")}'`);
           } catch (err) {
             resolvedScriptPath = this._scriptPath;
           }
-          executableDir = path6.resolve(
-            path6.dirname(resolvedScriptPath),
+          executableDir = path7.resolve(
+            path7.dirname(resolvedScriptPath),
             executableDir
           );
         }
         if (executableDir) {
           let localFile = findFile(executableDir, executableFile);
           if (!localFile && !subcommand._executableFile && this._scriptPath) {
-            const legacyName = path6.basename(
+            const legacyName = path7.basename(
               this._scriptPath,
-              path6.extname(this._scriptPath)
+              path7.extname(this._scriptPath)
             );
             if (legacyName !== this._name) {
               localFile = findFile(
@@ -1945,7 +1945,7 @@ Expecting one of '${allowedValues.join("', '")}'`);
           }
           executableFile = localFile || executableFile;
         }
-        launchWithNode = sourceExt.includes(path6.extname(executableFile));
+        launchWithNode = sourceExt.includes(path7.extname(executableFile));
         let proc;
         if (process2.platform !== "win32") {
           if (launchWithNode) {
@@ -2785,7 +2785,7 @@ Expecting one of '${allowedValues.join("', '")}'`);
        * @return {Command}
        */
       nameFromFilename(filename) {
-        this._name = path6.basename(filename, path6.extname(filename));
+        this._name = path7.basename(filename, path7.extname(filename));
         return this;
       }
       /**
@@ -2799,9 +2799,9 @@ Expecting one of '${allowedValues.join("', '")}'`);
        * @param {string} [path]
        * @return {(string|null|Command)}
        */
-      executableDir(path7) {
-        if (path7 === void 0) return this._executableDir;
-        this._executableDir = path7;
+      executableDir(path8) {
+        if (path8 === void 0) return this._executableDir;
+        this._executableDir = path8;
         return this;
       }
       /**
@@ -3029,43 +3029,6 @@ var require_commander = __commonJS({
     exports2.CommanderError = CommanderError2;
     exports2.InvalidArgumentError = InvalidArgumentError2;
     exports2.InvalidOptionArgumentError = InvalidArgumentError2;
-  }
-});
-
-// packages/core/dist/chunk-JAFVNFCO.js
-var ValidatorStage;
-var init_chunk_JAFVNFCO = __esm({
-  "packages/core/dist/chunk-JAFVNFCO.js"() {
-    "use strict";
-    ValidatorStage = class {
-      name = "ValidatorStage";
-      async execute(ctx, registry) {
-        ctx.logger.info("Running Validator Stage...");
-        const validatorIds = ctx.config.pipeline.validators;
-        ctx.validationResults = [];
-        for (const post of ctx.articles) {
-          let overallValid = true;
-          const combinedIssues = [];
-          for (const valId of validatorIds) {
-            const validator = registry.validators.get(valId);
-            if (!validator) {
-              ctx.logger.warn(`Validator plugin '${valId}' not found in registry`);
-              continue;
-            }
-            const res = await validator.validate(post);
-            if (!res.valid) overallValid = false;
-            combinedIssues.push(...res.issues);
-          }
-          const valResult = {
-            valid: overallValid,
-            filePath: post.filePath,
-            issues: combinedIssues
-          };
-          ctx.validationResults.push(valResult);
-          ctx.events.emit("article:validated", { result: valResult });
-        }
-      }
-    };
   }
 });
 
@@ -6558,21 +6521,50 @@ var require_gray_matter = __commonJS({
   }
 });
 
-// packages/core/dist/validator-stage-CVGQTTS7.js
-var validator_stage_CVGQTTS7_exports = {};
-__export(validator_stage_CVGQTTS7_exports, {
+// packages/core/src/pipeline/stages/validator-stage.ts
+var validator_stage_exports = {};
+__export(validator_stage_exports, {
   ValidatorStage: () => ValidatorStage
 });
-var init_validator_stage_CVGQTTS7 = __esm({
-  "packages/core/dist/validator-stage-CVGQTTS7.js"() {
+var ValidatorStage;
+var init_validator_stage = __esm({
+  "packages/core/src/pipeline/stages/validator-stage.ts"() {
     "use strict";
-    init_chunk_JAFVNFCO();
+    ValidatorStage = class {
+      name = "ValidatorStage";
+      async execute(ctx, registry) {
+        ctx.logger.info("Running Validator Stage...");
+        const validatorIds = ctx.config.pipeline.validators;
+        ctx.validationResults = [];
+        for (const post of ctx.articles) {
+          let overallValid = true;
+          const combinedIssues = [];
+          for (const valId of validatorIds) {
+            const validator = registry.validators.get(valId);
+            if (!validator) {
+              ctx.logger.warn(`Validator plugin '${valId}' not found in registry`);
+              continue;
+            }
+            const res = await validator.validate(post);
+            if (!res.valid) overallValid = false;
+            combinedIssues.push(...res.issues);
+          }
+          const valResult = {
+            valid: overallValid,
+            filePath: post.filePath,
+            issues: combinedIssues
+          };
+          ctx.validationResults.push(valResult);
+          ctx.events.emit("article:validated", { result: valResult });
+        }
+      }
+    };
   }
 });
 
 // packages/cli/src/index.ts
 var fs5 = __toESM(require("fs"), 1);
-var path5 = __toESM(require("path"), 1);
+var path6 = __toESM(require("path"), 1);
 
 // node_modules/.pnpm/commander@12.1.0/node_modules/commander/esm.mjs
 var import_index = __toESM(require_commander(), 1);
@@ -6590,9 +6582,6 @@ var {
   Option,
   Help
 } = import_index.default;
-
-// packages/core/dist/index.js
-init_chunk_JAFVNFCO();
 
 // node_modules/.pnpm/zod@3.25.76/node_modules/zod/v3/external.js
 var external_exports = {};
@@ -7072,8 +7061,8 @@ function getErrorMap() {
 
 // node_modules/.pnpm/zod@3.25.76/node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path: path6, errorMaps, issueData } = params;
-  const fullPath = [...path6, ...issueData.path || []];
+  const { data, path: path7, errorMaps, issueData } = params;
+  const fullPath = [...path7, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -7189,11 +7178,11 @@ var errorUtil;
 
 // node_modules/.pnpm/zod@3.25.76/node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path6, key) {
+  constructor(parent, value, path7, key) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path6;
+    this._path = path7;
     this._key = key;
   }
   get path() {
@@ -10635,17 +10624,7 @@ var coerce = {
 };
 var NEVER = INVALID;
 
-// packages/core/dist/index.js
-var fs = __toESM(require("fs"), 1);
-var path = __toESM(require("path"), 1);
-var fs2 = __toESM(require("fs"), 1);
-var path2 = __toESM(require("path"), 1);
-var import_events = require("events");
-var fs3 = __toESM(require("fs"), 1);
-var path3 = __toESM(require("path"), 1);
-var import_gray_matter = __toESM(require_gray_matter(), 1);
-var fs4 = __toESM(require("fs"), 1);
-var path4 = __toESM(require("path"), 1);
+// packages/core/src/models/frontmatter.ts
 var FrontmatterSchema = external_exports.object({
   title: external_exports.string({ required_error: "Article title is required" }).min(1, "Title cannot be empty"),
   description: external_exports.string().optional().default(""),
@@ -10656,6 +10635,8 @@ var FrontmatterSchema = external_exports.object({
   cover: external_exports.string().optional(),
   series: external_exports.string().optional()
 }).passthrough();
+
+// packages/core/src/models/blog-post.ts
 var BlogPost = class {
   filePath;
   frontmatter;
@@ -10691,6 +10672,8 @@ var BlogPost = class {
     return Math.abs(hash).toString(16);
   }
 };
+
+// packages/core/src/models/config.ts
 var PlatformConfigSchema = external_exports.object({
   enabled: external_exports.boolean().default(true),
   apiKey: external_exports.string().optional(),
@@ -10716,6 +10699,8 @@ var DevPublisherConfigSchema = external_exports.object({
   platforms: external_exports.record(PlatformConfigSchema).default({}),
   pipeline: PipelineConfigSchema.default({})
 });
+
+// packages/core/src/infra/logger.ts
 var ConsoleLogger = class {
   prefix;
   constructor(prefix = "[DevPublisher]") {
@@ -10736,6 +10721,10 @@ var ConsoleLogger = class {
     console.error(`${this.prefix} \u274C ${message}`, ...meta);
   }
 };
+
+// packages/core/src/infra/cache.ts
+var fs = __toESM(require("fs"), 1);
+var path = __toESM(require("path"), 1);
 var MemoryCacheProvider = class {
   store = /* @__PURE__ */ new Map();
   async get(key) {
@@ -10805,6 +10794,10 @@ var FileCacheProvider = class {
     this.saveToFile();
   }
 };
+
+// packages/core/src/infra/tracking.ts
+var fs2 = __toESM(require("fs"), 1);
+var path2 = __toESM(require("path"), 1);
 var FileTrackingProvider = class {
   filePath;
   state;
@@ -10880,8 +10873,11 @@ var MemoryTrackingProvider = class {
     return { ...this.state.articles };
   }
 };
+
+// packages/core/src/events/event-bus.ts
+var import_node_events = require("events");
 var EventBus = class {
-  emitter = new import_events.EventEmitter();
+  emitter = new import_node_events.EventEmitter();
   on(event, listener) {
     this.emitter.on(event, listener);
     return this;
@@ -10902,6 +10898,8 @@ var EventBus = class {
     return this;
   }
 };
+
+// packages/core/src/registry/loader-registry.ts
 var LoaderRegistry = class {
   loaders = /* @__PURE__ */ new Map();
   register(loader) {
@@ -10917,6 +10915,8 @@ var LoaderRegistry = class {
     return Array.from(this.loaders.values());
   }
 };
+
+// packages/core/src/registry/validator-registry.ts
 var ValidatorRegistry = class {
   validators = /* @__PURE__ */ new Map();
   register(validator) {
@@ -10932,6 +10932,8 @@ var ValidatorRegistry = class {
     return Array.from(this.validators.values());
   }
 };
+
+// packages/core/src/registry/transformer-registry.ts
 var TransformerRegistry = class {
   transformers = /* @__PURE__ */ new Map();
   register(transformer) {
@@ -10947,6 +10949,8 @@ var TransformerRegistry = class {
     return Array.from(this.transformers.values());
   }
 };
+
+// packages/core/src/registry/publisher-registry.ts
 var PublisherRegistry = class {
   plugins = /* @__PURE__ */ new Map();
   register(plugin) {
@@ -10962,6 +10966,8 @@ var PublisherRegistry = class {
     return Array.from(this.plugins.values());
   }
 };
+
+// packages/core/src/registry/reporter-registry.ts
 var ReporterRegistry = class {
   reporters = /* @__PURE__ */ new Map();
   register(reporter) {
@@ -10977,6 +10983,8 @@ var ReporterRegistry = class {
     return Array.from(this.reporters.values());
   }
 };
+
+// packages/core/src/registry/registry-manager.ts
 var RegistryManager = class {
   loaders = new LoaderRegistry();
   validators = new ValidatorRegistry();
@@ -11014,6 +11022,11 @@ var RegistryManager = class {
     ];
   }
 };
+
+// packages/core/src/plugins/file-loader.ts
+var fs3 = __toESM(require("fs"), 1);
+var path3 = __toESM(require("path"), 1);
+var import_gray_matter = __toESM(require_gray_matter(), 1);
 var FileLoaderPlugin = class {
   id = "file-loader";
   name = "File System Loader";
@@ -11055,6 +11068,8 @@ var FileLoaderPlugin = class {
     return posts;
   }
 };
+
+// packages/core/src/plugins/frontmatter-validator.ts
 var FrontmatterValidatorPlugin = class {
   id = "frontmatter";
   name = "Frontmatter Validator";
@@ -11087,6 +11102,8 @@ var FrontmatterValidatorPlugin = class {
     };
   }
 };
+
+// packages/core/src/plugins/canonical-url-transformer.ts
 var CanonicalUrlTransformerPlugin = class {
   id = "canonical-url-transformer";
   name = "Canonical URL Transformer";
@@ -11097,6 +11114,8 @@ var CanonicalUrlTransformerPlugin = class {
     return post;
   }
 };
+
+// packages/core/src/plugins/console-reporter.ts
 var ConsoleReporterPlugin = class {
   id = "console-reporter";
   name = "Console Reporter";
@@ -11127,6 +11146,8 @@ var ConsoleReporterPlugin = class {
     console.log("==================================================\n");
   }
 };
+
+// packages/core/src/pipeline/context.ts
 var ExecutionContext = class {
   id;
   config;
@@ -11147,6 +11168,8 @@ var ExecutionContext = class {
     this.events = options2.events ?? new EventBus();
   }
 };
+
+// packages/core/src/pipeline/stages/loader-stage.ts
 var LoaderStage = class {
   name = "LoaderStage";
   async execute(ctx, registry) {
@@ -11165,6 +11188,11 @@ var LoaderStage = class {
     }
   }
 };
+
+// packages/core/src/pipeline/pipeline-runner.ts
+init_validator_stage();
+
+// packages/core/src/pipeline/stages/transformer-stage.ts
 var TransformerStage = class {
   name = "TransformerStage";
   async execute(ctx, registry) {
@@ -11183,6 +11211,9 @@ var TransformerStage = class {
     ctx.articles = transformedPosts;
   }
 };
+
+// packages/core/src/pipeline/stages/publisher-stage.ts
+var path4 = __toESM(require("path"), 1);
 var PublisherStage = class {
   name = "PublisherStage";
   async execute(ctx, registry) {
@@ -11199,10 +11230,11 @@ var PublisherStage = class {
       const valRes = ctx.validationResults.find((r) => r.filePath === post.filePath);
       if (valRes && !valRes.valid) {
         ctx.logger.warn(`Skipping publication for invalid article: ${post.filePath}`);
+        const fileName = path4.basename(post.filePath, path4.extname(post.filePath));
         ctx.results.push({
           filePath: post.filePath,
-          slug: post.slug,
-          title: post.title,
+          slug: post.frontmatter.slug || fileName,
+          title: post.frontmatter.title || fileName,
           platformResults: [],
           success: false
         });
@@ -11281,6 +11313,8 @@ var PublisherStage = class {
     }
   }
 };
+
+// packages/core/src/pipeline/stages/reporter-stage.ts
 var ReporterStage = class {
   name = "ReporterStage";
   async execute(ctx, registry) {
@@ -11302,6 +11336,8 @@ var ReporterStage = class {
     }
   }
 };
+
+// packages/core/src/pipeline/pipeline-runner.ts
 var PipelineRunner = class {
   stages = [];
   constructor(stages) {
@@ -11341,11 +11377,18 @@ var PipelineRunner = class {
     }
   }
 };
+
+// packages/core/src/index.ts
+init_validator_stage();
+
+// packages/core/src/config/config-loader.ts
+var fs4 = __toESM(require("fs"), 1);
+var path5 = __toESM(require("path"), 1);
 var ConfigLoader = class _ConfigLoader {
   static load(configPath, overrides) {
     let rawConfig = {};
     const targetPath = configPath || "devpublisher.yml";
-    const absolutePath = path4.resolve(process.cwd(), targetPath);
+    const absolutePath = path5.resolve(process.cwd(), targetPath);
     if (fs4.existsSync(absolutePath)) {
       const content = fs4.readFileSync(absolutePath, "utf-8");
       if (absolutePath.endsWith(".json")) {
@@ -11419,6 +11462,8 @@ var ConfigLoader = class _ConfigLoader {
     return val;
   }
 };
+
+// packages/core/src/engine.ts
 var DevPublisherEngine = class {
   registry = new RegistryManager();
   config;
@@ -11462,7 +11507,7 @@ var DevPublisherEngine = class {
     if (fileLoader) {
       ctx.articles = await fileLoader.load(ctx.config.source);
     }
-    const validatorStage = new (await Promise.resolve().then(() => (init_validator_stage_CVGQTTS7(), validator_stage_CVGQTTS7_exports))).ValidatorStage();
+    const validatorStage = new (await Promise.resolve().then(() => (init_validator_stage(), validator_stage_exports))).ValidatorStage();
     await validatorStage.execute(ctx, this.registry);
     return ctx.validationResults;
   }
@@ -11471,7 +11516,7 @@ var DevPublisherEngine = class {
   }
 };
 
-// packages/publisher-devto/dist/index.js
+// packages/publisher-devto/src/devto-publisher.ts
 var DevtoPublisher = class {
   platformId = "devto";
   platformName = "Dev.to";
@@ -11629,6 +11674,8 @@ var DevtoPublisher = class {
     };
   }
 };
+
+// packages/publisher-devto/src/devto-plugin.ts
 var DevtoPublisherPlugin = class {
   id = "devto";
   name = "Dev.to Publisher";
@@ -11639,9 +11686,11 @@ var DevtoPublisherPlugin = class {
     return new DevtoPublisher(config);
   }
 };
-var index_default = DevtoPublisherPlugin;
 
-// packages/publisher-hashnode/dist/index.js
+// packages/publisher-devto/src/index.ts
+var src_default = DevtoPublisherPlugin;
+
+// packages/publisher-hashnode/src/index.ts
 var HashnodePublisher = class {
   platformId = "hashnode";
   platformName = "Hashnode";
@@ -11668,9 +11717,9 @@ var HashnodePublisherPlugin = class {
     return new HashnodePublisher();
   }
 };
-var index_default2 = HashnodePublisherPlugin;
+var src_default2 = HashnodePublisherPlugin;
 
-// packages/publisher-medium/dist/index.js
+// packages/publisher-medium/src/index.ts
 var MediumPublisher = class {
   platformId = "medium";
   platformName = "Medium";
@@ -11697,22 +11746,22 @@ var MediumPublisherPlugin = class {
     return new MediumPublisher();
   }
 };
-var index_default3 = MediumPublisherPlugin;
+var src_default3 = MediumPublisherPlugin;
 
 // packages/cli/src/index.ts
 var program2 = new Command();
 program2.name("devpublisher").description("Open source technical content syndication CLI").version("0.1.0");
 function createEngine(target, options2) {
   const engine = new DevPublisherEngine({ configPath: options2?.config });
-  engine.use(new index_default());
-  engine.use(new index_default2());
-  engine.use(new index_default3());
+  engine.use(new src_default());
+  engine.use(new src_default2());
+  engine.use(new src_default3());
   if (target) {
     const isFile = fs5.existsSync(target) && fs5.statSync(target).isFile();
     if (isFile) {
-      engine.config.source.files = [path5.resolve(process.cwd(), target)];
+      engine.config.source.files = [path6.resolve(process.cwd(), target)];
     } else {
-      engine.config.source.folder = path5.resolve(process.cwd(), target);
+      engine.config.source.folder = path6.resolve(process.cwd(), target);
     }
   }
   if (options2?.platforms) {
@@ -11787,7 +11836,7 @@ program2.command("doctor").description("Check system health, environment variabl
   console.log("\nStatus: Ready for publishing \u{1F680}\n");
 });
 program2.command("init").description("Create a sample devpublisher.yml configuration file").action(() => {
-  const configPath = path5.resolve(process.cwd(), "devpublisher.yml");
+  const configPath = path6.resolve(process.cwd(), "devpublisher.yml");
   if (fs5.existsSync(configPath)) {
     console.log("\u26A0\uFE0F devpublisher.yml already exists in current directory");
     return;
