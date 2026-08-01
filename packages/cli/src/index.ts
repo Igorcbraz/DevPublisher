@@ -167,4 +167,22 @@ pipeline:
     console.log('✅ Created devpublisher.yml configuration file!');
   });
 
-program.parse(process.argv);
+function getActionArguments(): string[] {
+  const file = process.env.INPUT_FILE?.trim();
+  const folder = process.env.INPUT_FOLDER?.trim();
+  const platforms = process.env.INPUT_PLATFORMS?.trim();
+  const config = process.env.INPUT_CONFIG?.trim();
+  const devtoToken = process.env.INPUT_DEVTO_TOKEN?.trim();
+
+  if (devtoToken && !process.env.DEVTO_API_KEY) {
+    process.env.DEVTO_API_KEY = devtoToken;
+  }
+
+  const args = ['node', 'devpublisher', 'publish', file || folder || 'content/blog'];
+  if (platforms) args.push('--platforms', platforms);
+  if (config) args.push('--config', config);
+
+  return args;
+}
+
+program.parse(process.env.GITHUB_ACTIONS === 'true' ? getActionArguments() : process.argv);
