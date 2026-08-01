@@ -1,0 +1,39 @@
+{
+  "name": "@devpublisher/cli",
+  "version": "0.1.0",
+  "description": "Command-line interface for DevPublisher",
+  "type": "module",
+  "bin": {
+    "devpublisher": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@devpublisher/core": "workspace:*",
+    "@devpublisher/publisher-devto": "workspace:*",
+    "@devpublisher/publisher-hashnode": "workspace:*",
+    "@devpublisher/publisher-medium": "workspace:*",
+    "commander": "^12.1.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

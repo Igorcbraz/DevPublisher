@@ -1,0 +1,170 @@
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { Command } from 'commander';
+import { DevPublisherEngine } from '@devpublisher/core';
+import DevtoPublisherPlugin from '@devpublisher/publisher-devto';
+import HashnodePublisherPlugin from '@devpublisher/publisher-hashnode';
+import MediumPublisherPlugin from '@devpublisher/publisher-medium';
+
+const program = new Command();
+
+program
+  .name('devpublisher')
+  .description('Open source technical content syndication CLI')
+  .version('0.1.0');
+
+function createEngine(target?: string, options?: { platforms?: string; config?: string }): DevPublisherEngine {
+  const engine = new DevPublisherEngine({ configPath: options?.config });
+
+  // Register available publishers
+  engine.use(new DevtoPublisherPlugin());
+  engine.use(new HashnodePublisherPlugin());
+  engine.use(new MediumPublisherPlugin());
+
+  if (target) {
+    const isFile = fs.existsSync(target) && fs.statSync(target).isFile();
+    if (isFile) {
+      engine.config.source.files = [path.resolve(process.cwd(), target)];
+    } else {
+      engine.config.source.folder = path.resolve(process.cwd(), target);
+    }
+  }
+
+  if (options?.platforms) {
+    const platformList = options.platforms.split(',').map((p) => p.trim());
+    for (const p of platformList) {
+      if (!engine.config.platforms[p]) {
+        engine.config.platforms[p] = { enabled: true, options: {} };
+      } else {
+        engine.config.platforms[p]!.enabled = true;
+      }
+    }
+  } else if (Object.keys(engine.config.platforms).length === 0) {
+    // Default to devto if no platform explicitly configured
+    engine.config.platforms['devto'] = { enabled: true, options: {} };
+  }
+
+  return engine;
+}
+
+program
+  .command('publish')
+  .argument('[target]', 'Markdown file or directory to publish', 'content/blog')
+  .option('-p, --platforms <platforms>', 'Comma-separated target platforms (e.g., devto,hashnode)')
+  .option('-c, --config <config>', 'Path to devpublisher.yml config file')
+  .description('Publish markdown articles to configured platforms')
+  .action(async (target: string, options: { platforms?: string; config?: string }) => {
+    try {
+      const engine = createEngine(target, options);
+      const result = await engine.run();
+      if (result.failedArticles > 0) {
+        process.exit(1);
+      }
+    } catch (err: any) {
+      console.error('❌ Publication error:', err.message);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('validate')
+  .argument('[target]', 'Markdown file or directory to validate', 'content/blog')
+  .option('-c, --config <config>', 'Path to devpublisher.yml config file')
+  .description('Validate frontmatter and syntax of markdown articles')
+  .action(async (target: string, options: { config?: string }) => {
+    try {
+      const engine = createEngine(target, options);
+      const results = await engine.validate();
+      let hasError = false;
+
+      console.log('\n🔍 Validation Results:\n');
+      for (const res of results) {
+        const icon = res.valid ? '✅' : '❌';
+        console.log(`${icon} ${res.filePath}`);
+        for (const issue of res.issues) {
+          console.log(`   [${issue.severity.toUpperCase()}] ${issue.field ? `${issue.field}: ` : ''}${issue.message}`);
+        }
+        if (!res.valid) hasError = true;
+      }
+      console.log('');
+
+      if (hasError) process.exit(1);
+    } catch (err: any) {
+      console.error('❌ Validation error:', err.message);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('list')
+  .description('List all registered plugins and publisher platforms')
+  .action(() => {
+    const engine = createEngine();
+    const plugins = engine.listPlugins();
+
+    console.log('\n🔌 Registered DevPublisher Plugins:\n');
+    for (const plugin of plugins) {
+      console.log(`- [${plugin.type.toUpperCase()}] ${plugin.name} (id: ${plugin.id}, v${plugin.version})`);
+      if (plugin.description) {
+        console.log(`  ${plugin.description}`);
+      }
+    }
+    console.log('');
+  });
+
+program
+  .command('doctor')
+  .description('Check system health, environment variables, and plugin configuration')
+  .action(() => {
+    console.log('\n🩺 DevPublisher Health Check:\n');
+    console.log(`Node Version:        ${process.version}`);
+    console.log(`Working Directory:   ${process.cwd()}`);
+
+    const hasDevtoKey = !!process.env.DEVTO_API_KEY;
+    console.log(`DEVTO_API_KEY:       ${hasDevtoKey ? '✅ Set' : '⚠️ Missing (Set DEVTO_API_KEY for Dev.to publishing)'}`);
+
+    const hasHashnodeKey = !!process.env.HASHNODE_API_KEY;
+    console.log(`HASHNODE_API_KEY:    ${hasHashnodeKey ? '✅ Set' : '⚪ Not set'}`);
+
+    const engine = createEngine();
+    console.log(`Registered Plugins:  ${engine.listPlugins().length} active`);
+    console.log('\nStatus: Ready for publishing 🚀\n');
+  });
+
+program
+  .command('init')
+  .description('Create a sample devpublisher.yml configuration file')
+  .action(() => {
+    const configPath = path.resolve(process.cwd(), 'devpublisher.yml');
+    if (fs.existsSync(configPath)) {
+      console.log('⚠️ devpublisher.yml already exists in current directory');
+      return;
+    }
+
+    const sampleYaml = `# DevPublisher Configuration File
+version: "1"
+
+source:
+  folder: "content/blog"
+  match: "**/*.md"
+
+platforms:
+  devto:
+    enabled: true
+    apiKey: "\${DEVTO_API_KEY}"
+
+pipeline:
+  validators:
+    - frontmatter
+  transformers:
+    - canonical-url
+  tracking:
+    provider: "file"
+    file: ".devpublisher/state.json"
+`;
+
+    fs.writeFileSync(configPath, sampleYaml, 'utf-8');
+    console.log('✅ Created devpublisher.yml configuration file!');
+  });
+
+program.parse(process.argv);

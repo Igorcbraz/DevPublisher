@@ -1,0 +1,29 @@
+name: 'DevPublisher Action'
+description: 'Automated technical content syndication to Dev.to, Hashnode, Medium and more'
+author: 'Igor Braz'
+branding:
+  icon: 'upload-cloud'
+  color: 'purple'
+
+inputs:
+  folder:
+    description: 'Folder containing Markdown articles to publish'
+    required: false
+    default: 'content/blog'
+  file:
+    description: 'Single Markdown article file to publish'
+    required: false
+  platforms:
+    description: 'Comma-separated list of target platforms (e.g. devto, hashnode)'
+    required: false
+    default: 'devto'
+  devto_token:
+    description: 'Dev.to API Key'
+    required: false
+  config:
+    description: 'Path to devpublisher.yml config file'
+    required: false
+
+runs:
+  using: 'node22'
+  main: 'packages/cli/dist/index.js'
