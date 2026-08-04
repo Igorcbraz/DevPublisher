@@ -111931,7 +111931,9 @@ var PublisherStage = class {
                 message: "Article content has not changed since the last publication"
               };
             } else {
-              ctx.logger.info(`Updating article '${post.slug}' on ${plugin.name} (ID: ${platformState.externalId})...`);
+              ctx.logger.info(
+                `Updating article '${post.slug}' on ${plugin.name} (ID: ${platformState.externalId})...`
+              );
               result = await publisher.update(post, platformState.externalId, {
                 apiKey: platformConfig.apiKey,
                 config: platformConfig
@@ -111955,7 +111957,11 @@ var PublisherStage = class {
             }
             ctx.events.emit("publish:success", { post, platformId, result });
           } else if (result.status === "skipped") {
-            ctx.events.emit("publish:skipped", { post, platformId, reason: result.message || "Skipped" });
+            ctx.events.emit("publish:skipped", {
+              post,
+              platformId,
+              reason: result.message || "Skipped"
+            });
           } else {
             ctx.events.emit("publish:failed", { post, platformId, result });
           }
@@ -112199,10 +112205,18 @@ var DevtoPublisher = class {
   async validate(post) {
     const issues = [];
     if (!post.title) {
-      issues.push({ field: "title", message: "Dev.to requires a title", severity: "error" });
+      issues.push({
+        field: "title",
+        message: "Dev.to requires a title",
+        severity: "error"
+      });
     }
     if (!post.content) {
-      issues.push({ field: "content", message: "Dev.to requires article content", severity: "error" });
+      issues.push({
+        field: "content",
+        message: "Dev.to requires article content",
+        severity: "error"
+      });
     }
     if (post.frontmatter.tags && post.frontmatter.tags.length > 4) {
       issues.push({
@@ -112397,16 +112411,28 @@ var HashnodePublisher = class {
       issues.push({ field: "title", message: "Hashnode requires a title", severity: "error" });
     }
     if (!post.content.trim()) {
-      issues.push({ field: "content", message: "Hashnode requires article content", severity: "error" });
+      issues.push({
+        field: "content",
+        message: "Hashnode requires article content",
+        severity: "error"
+      });
     }
     if (post.frontmatter.tags.length === 0) {
-      issues.push({ field: "tags", message: "Hashnode requires at least one tag", severity: "error" });
+      issues.push({
+        field: "tags",
+        message: "Hashnode requires at least one tag",
+        severity: "error"
+      });
     }
     if (!this.getToken()) {
       issues.push({ field: "token", message: "HASHNODE_TOKEN is required", severity: "error" });
     }
     if (!this.getPublicationId()) {
-      issues.push({ field: "publicationId", message: "HASHNODE_PUBLICATION_ID is required", severity: "error" });
+      issues.push({
+        field: "publicationId",
+        message: "HASHNODE_PUBLICATION_ID is required",
+        severity: "error"
+      });
     }
     return {
       valid: issues.every((issue2) => issue2.severity !== "error"),
@@ -112420,12 +112446,17 @@ var HashnodePublisher = class {
     const configurationError = this.getConfigurationError(token, publicationId);
     if (configurationError) return this.failedResult(configurationError);
     try {
-      const response = await this.executeMutation("publishPost", PUBLISH_POST_MUTATION, {
-        input: {
-          publicationId,
-          ...this.createPostInput(post)
-        }
-      }, token);
+      const response = await this.executeMutation(
+        "publishPost",
+        PUBLISH_POST_MUTATION,
+        {
+          input: {
+            publicationId,
+            ...this.createPostInput(post)
+          }
+        },
+        token
+      );
       const publishedPost = response.data?.publishPost?.post;
       if (!publishedPost) return this.failedResult("Hashnode did not return the published post");
       return {
@@ -112446,12 +112477,17 @@ var HashnodePublisher = class {
     const configurationError = this.getConfigurationError(token, publicationId);
     if (configurationError) return this.failedResult(configurationError);
     try {
-      const response = await this.executeMutation("updatePost", UPDATE_POST_MUTATION, {
-        input: {
-          id: externalId,
-          ...this.createPostInput(post)
-        }
-      }, token);
+      const response = await this.executeMutation(
+        "updatePost",
+        UPDATE_POST_MUTATION,
+        {
+          input: {
+            id: externalId,
+            ...this.createPostInput(post)
+          }
+        },
+        token
+      );
       const updatedPost = response.data?.updatePost?.post;
       if (!updatedPost) return this.failedResult("Hashnode did not return the updated post");
       return {
@@ -112498,7 +112534,8 @@ var HashnodePublisher = class {
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
-        Authorization: token
+        Authorization: token,
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
       },
       body: JSON.stringify({ operationName: operation, query, variables })
     });
@@ -112507,7 +112544,9 @@ var HashnodePublisher = class {
     }
     const payload = await response.json();
     if (payload.errors?.length) {
-      throw new Error(payload.errors.map((error2) => error2.message || "Unknown GraphQL error").join("; "));
+      throw new Error(
+        payload.errors.map((error2) => error2.message || "Unknown GraphQL error").join("; ")
+      );
     }
     return payload;
   }
@@ -112546,10 +112585,18 @@ var MediumPublisher = class {
   async validate(post) {
     const issues = [];
     if (!post.title) {
-      issues.push({ field: "title", message: "Medium requires a title", severity: "error" });
+      issues.push({
+        field: "title",
+        message: "Medium requires a title",
+        severity: "error"
+      });
     }
     if (!post.content) {
-      issues.push({ field: "content", message: "Medium requires article content", severity: "error" });
+      issues.push({
+        field: "content",
+        message: "Medium requires article content",
+        severity: "error"
+      });
     }
     return {
       valid: issues.filter((i) => i.severity === "error").length === 0,
@@ -112637,10 +112684,18 @@ var TabnewsPublisher = class {
   async validate(post) {
     const issues = [];
     if (!post.title) {
-      issues.push({ field: "title", message: "TabNews requires a title", severity: "error" });
+      issues.push({
+        field: "title",
+        message: "TabNews requires a title",
+        severity: "error"
+      });
     }
     if (!post.content) {
-      issues.push({ field: "content", message: "TabNews requires article content", severity: "error" });
+      issues.push({
+        field: "content",
+        message: "TabNews requires article content",
+        severity: "error"
+      });
     }
     return {
       valid: issues.filter((i) => i.severity === "error").length === 0,
@@ -112671,7 +112726,7 @@ var TabnewsPublisher = class {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Cookie": `session_id=${sessionId}`
+          Cookie: `session_id=${sessionId}`
         },
         body: JSON.stringify(payload)
       });
@@ -112786,7 +112841,9 @@ program2.command("publish").argument("[target]", "Markdown file or directory to 
             outDir,
             { retentionDays: 7 }
           );
-          core.info(`Successfully uploaded medium-exports artifact (ID: ${id}, size: ${size} bytes)`);
+          core.info(
+            `Successfully uploaded medium-exports artifact (ID: ${id}, size: ${size} bytes)`
+          );
         } catch (e) {
           console.error("Failed to upload medium-exports artifact:", e.message);
         }
@@ -112810,7 +112867,9 @@ program2.command("validate").argument("[target]", "Markdown file or directory to
       const icon = res.valid ? "\u2705" : "\u274C";
       console.log(`${icon} ${res.filePath}`);
       for (const issue2 of res.issues) {
-        console.log(`   [${issue2.severity.toUpperCase()}] ${issue2.field ? `${issue2.field}: ` : ""}${issue2.message}`);
+        console.log(
+          `   [${issue2.severity.toUpperCase()}] ${issue2.field ? `${issue2.field}: ` : ""}${issue2.message}`
+        );
       }
       if (!res.valid) hasError = true;
     }
@@ -112826,7 +112885,9 @@ program2.command("list").description("List all registered plugins and publisher 
   const plugins = engine.listPlugins();
   console.log("\n\u{1F50C} Registered DevPublisher Plugins:\n");
   for (const plugin of plugins) {
-    console.log(`- [${plugin.type.toUpperCase()}] ${plugin.name} (id: ${plugin.id}, v${plugin.version})`);
+    console.log(
+      `- [${plugin.type.toUpperCase()}] ${plugin.name} (id: ${plugin.id}, v${plugin.version})`
+    );
     if (plugin.description) {
       console.log(`  ${plugin.description}`);
     }
@@ -112838,7 +112899,9 @@ program2.command("doctor").description("Check system health, environment variabl
   console.log(`Node Version:        ${process.version}`);
   console.log(`Working Directory:   ${process.cwd()}`);
   const hasDevtoKey = !!process.env.DEVTO_API_KEY;
-  console.log(`DEVTO_API_KEY:       ${hasDevtoKey ? "\u2705 Set" : "\u26A0\uFE0F Missing (Set DEVTO_API_KEY for Dev.to publishing)"}`);
+  console.log(
+    `DEVTO_API_KEY:       ${hasDevtoKey ? "\u2705 Set" : "\u26A0\uFE0F Missing (Set DEVTO_API_KEY for Dev.to publishing)"}`
+  );
   const hasHashnodeKey = !!process.env.HASHNODE_API_KEY;
   console.log(`HASHNODE_API_KEY:    ${hasHashnodeKey ? "\u2705 Set" : "\u26AA Not set"}`);
   const engine = createEngine();
