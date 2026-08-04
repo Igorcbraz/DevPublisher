@@ -11,7 +11,7 @@
 
 ## 💡 Motivation & Goal
 
-As technical writers and software engineers, sharing knowledge across developer communities (Dev.to, Hashnode, Medium, Ghost, LinkedIn) is essential for reach and personal branding. However, manually copying, pasting, reformatting Markdown, setting canonical URLs, and managing platform-specific tags is tedious and error-prone.
+As technical writers and software engineers, sharing knowledge across developer communities (Dev.to, Medium, Ghost, LinkedIn) is essential for reach and personal branding. However, manually copying, pasting, reformatting Markdown, setting canonical URLs, and managing platform-specific tags is tedious and error-prone.
 
 **DevPublisher** solves this by providing a unified, open-source content syndication engine. Built with an extensible **Pipeline & Plugin System**, DevPublisher parses your Markdown posts, validates frontmatter, applies necessary content transformations, and automatically cross-posts or updates your articles across target platforms while preserving canonical URLs for SEO.
 
@@ -19,7 +19,7 @@ As technical writers and software engineers, sharing knowledge across developer 
 
 ## ✨ Features
 
-- 🎯 **Multi-Platform Syndication**: Distribute articles to Dev.to out of the box, with extensible plugins for Hashnode, Medium, Ghost, and custom REST APIs.
+- 🎯 **Multi-Platform Syndication**: Distribute articles to Dev.to out of the box, with extensible plugins for Medium, Ghost, and custom REST APIs.
 - 🔌 **Extensible Plugin Architecture**: Independent registries for **Loaders**, **Validators**, **Transformers**, **Publishers**, **Reporters**, and **Enrichers**.
 - 🛠️ **Idempotent Execution**: Smart state tracking (`.devpublisher/state.json`) detects existing publications and executes updates instead of duplicate creates.
 - ⚡ **Zero-Business-Logic Clients**: Pure CLI (`devpublisher`), native GitHub Action (`- uses: Igorcbraz/DevPublisher@v1`), and Node.js SDK sharing the same engine.
@@ -154,7 +154,7 @@ DevPublisher is organized as a monorepo under `packages/`:
 packages/
 ├── core/                  # @devpublisher/core (Micro-Kernel, Pipeline Engine, Registries)
 ├── publisher-devto/       # @devpublisher/publisher-devto (Dev.to Plugin)
-├── publisher-hashnode/    # @devpublisher/publisher-hashnode (Hashnode Plugin Stub)
+
 ├── publisher-medium/      # @devpublisher/publisher-medium (Medium Plugin Stub)
 └── cli/                   # @devpublisher/cli (Command Line Adapter)
 ```
@@ -247,7 +247,7 @@ await engine.run();
 - [x] Dev.to Publisher Plugin (`@devpublisher/publisher-devto`)
 - [x] DevPublisher CLI (`@devpublisher/cli`)
 - [x] GitHub Action Workflow (`action.yml`)
-- [ ] Hashnode Publisher Plugin (`@devpublisher/publisher-hashnode`)
+
 - [ ] Medium Publisher Plugin (`@devpublisher/publisher-medium`)
 - [ ] Ghost Publisher Plugin
 - [ ] WordPress Publisher Plugin

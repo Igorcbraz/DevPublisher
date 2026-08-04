@@ -16,7 +16,6 @@ export default defineConfig({
       ...options.alias,
       '@devpublisher/core': './packages/core/src/index.ts',
       '@devpublisher/publisher-devto': './packages/publisher-devto/src/index.ts',
-      '@devpublisher/publisher-hashnode': './packages/publisher-hashnode/src/index.ts',
       '@devpublisher/publisher-medium': './packages/publisher-medium/src/index.ts',
       '@devpublisher/publisher-tabnews': './packages/publisher-tabnews/src/index.ts'
     };

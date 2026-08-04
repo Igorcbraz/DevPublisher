@@ -11,9 +11,7 @@ platforms:
   devto:
     enabled: true
     apiKey: '${DEVTO_API_KEY}'
-  hashnode:
-    enabled: false
-    apiKey: '${HASHNODE_API_KEY}'
+
   medium:
     enabled: false
     apiKey: '${MEDIUM_API_KEY}'

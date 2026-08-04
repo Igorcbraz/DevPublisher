@@ -1,5 +1,5 @@
 name: 'DevPublisher Action'
-description: 'Automated technical content syndication to Dev.to, Hashnode, Medium and more'
+description: 'Automated technical content syndication to Dev.to, Medium and more'
 author: 'Igor Braz'
 branding:
   icon: 'upload-cloud'
@@ -14,7 +14,7 @@ inputs:
     description: 'Single Markdown article file to publish'
     required: false
   platforms:
-    description: 'Comma-separated list of target platforms (e.g. devto, hashnode)'
+    description: 'Comma-separated list of target platforms (e.g. devto, medium)'
     required: false
     default: 'devto'
   config:

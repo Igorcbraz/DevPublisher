@@ -112376,208 +112376,6 @@ var DevtoPublisherPlugin = class {
 // packages/publisher-devto/src/index.ts
 var src_default = DevtoPublisherPlugin;
 
-// packages/publisher-hashnode/src/hashnode-publisher.ts
-var HASHNODE_ENDPOINT = "https://gql.hashnode.com";
-var PUBLISH_POST_MUTATION = `
-  mutation PublishPost($input: PublishPostInput!) {
-    publishPost(input: $input) {
-      post {
-        id
-        url
-      }
-    }
-  }
-`;
-var UPDATE_POST_MUTATION = `
-  mutation UpdatePost($input: UpdatePostInput!) {
-    updatePost(input: $input) {
-      post {
-        id
-        url
-      }
-    }
-  }
-`;
-var HashnodePublisher = class {
-  constructor(config) {
-    this.config = config;
-  }
-  config;
-  platformId = "hashnode";
-  platformName = "Hashnode";
-  async validate(post) {
-    const issues = [];
-    if (!post.title) {
-      issues.push({ field: "title", message: "Hashnode requires a title", severity: "error" });
-    }
-    if (!post.content.trim()) {
-      issues.push({
-        field: "content",
-        message: "Hashnode requires article content",
-        severity: "error"
-      });
-    }
-    if (post.frontmatter.tags.length === 0) {
-      issues.push({
-        field: "tags",
-        message: "Hashnode requires at least one tag",
-        severity: "error"
-      });
-    }
-    if (!this.getToken()) {
-      issues.push({ field: "token", message: "HASHNODE_TOKEN is required", severity: "error" });
-    }
-    if (!this.getPublicationId()) {
-      issues.push({
-        field: "publicationId",
-        message: "HASHNODE_PUBLICATION_ID is required",
-        severity: "error"
-      });
-    }
-    return {
-      valid: issues.every((issue2) => issue2.severity !== "error"),
-      filePath: post.filePath,
-      issues
-    };
-  }
-  async publish(post, options2) {
-    const token = this.getToken(options2);
-    const publicationId = this.getPublicationId(options2);
-    const configurationError = this.getConfigurationError(token, publicationId);
-    if (configurationError) return this.failedResult(configurationError);
-    try {
-      const response = await this.executeMutation(
-        "publishPost",
-        PUBLISH_POST_MUTATION,
-        {
-          input: {
-            publicationId,
-            ...this.createPostInput(post)
-          }
-        },
-        token
-      );
-      const publishedPost = response.data?.publishPost?.post;
-      if (!publishedPost) return this.failedResult("Hashnode did not return the published post");
-      return {
-        platformId: this.platformId,
-        platformName: this.platformName,
-        status: "published",
-        externalId: publishedPost.id,
-        url: publishedPost.url,
-        message: "Successfully published to Hashnode"
-      };
-    } catch (error2) {
-      return this.failedResult(this.errorMessage(error2));
-    }
-  }
-  async update(post, externalId, options2) {
-    const token = this.getToken(options2);
-    const publicationId = this.getPublicationId(options2);
-    const configurationError = this.getConfigurationError(token, publicationId);
-    if (configurationError) return this.failedResult(configurationError);
-    try {
-      const response = await this.executeMutation(
-        "updatePost",
-        UPDATE_POST_MUTATION,
-        {
-          input: {
-            id: externalId,
-            ...this.createPostInput(post)
-          }
-        },
-        token
-      );
-      const updatedPost = response.data?.updatePost?.post;
-      if (!updatedPost) return this.failedResult("Hashnode did not return the updated post");
-      return {
-        platformId: this.platformId,
-        platformName: this.platformName,
-        status: "updated",
-        externalId: updatedPost.id,
-        url: updatedPost.url,
-        message: "Successfully updated on Hashnode"
-      };
-    } catch (error2) {
-      return this.failedResult(this.errorMessage(error2));
-    }
-  }
-  async delete(_externalId, _options) {
-    return this.failedResult("Hashnode deletion is not supported by this publisher");
-  }
-  getToken(options2) {
-    return options2?.apiKey || this.config?.apiKey || process.env.HASHNODE_TOKEN;
-  }
-  getPublicationId(options2) {
-    return options2?.config?.publicationId || this.config?.publicationId || process.env.HASHNODE_PUBLICATION_ID;
-  }
-  getConfigurationError(token, publicationId) {
-    if (!token) return "Hashnode token is missing. Set HASHNODE_TOKEN.";
-    if (!publicationId) return "Hashnode publication ID is missing. Set HASHNODE_PUBLICATION_ID.";
-    return void 0;
-  }
-  createPostInput(post) {
-    const input = {
-      title: post.title,
-      contentMarkdown: post.content,
-      slug: post.slug,
-      tags: post.frontmatter.tags.map((tag) => ({ name: tag, slug: this.toTagSlug(tag) }))
-    };
-    if (post.frontmatter.description) input.subtitle = post.frontmatter.description;
-    if (post.frontmatter.canonical) input.originalArticleURL = post.frontmatter.canonical;
-    if (post.frontmatter.cover) input.coverImageOptions = { coverImageURL: post.frontmatter.cover };
-    return input;
-  }
-  async executeMutation(operation, query, variables, token) {
-    const response = await fetch(HASHNODE_ENDPOINT, {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        Authorization: token,
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-      },
-      body: JSON.stringify({ operationName: operation, query, variables })
-    });
-    if (!response.ok) {
-      throw new Error(`Hashnode API returned status ${response.status}: ${await response.text()}`);
-    }
-    const payload = await response.json();
-    if (payload.errors?.length) {
-      throw new Error(
-        payload.errors.map((error2) => error2.message || "Unknown GraphQL error").join("; ")
-      );
-    }
-    return payload;
-  }
-  toTagSlug(tag) {
-    return tag.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-  }
-  failedResult(message) {
-    return {
-      platformId: this.platformId,
-      platformName: this.platformName,
-      status: "failed",
-      message
-    };
-  }
-  errorMessage(error2) {
-    return error2 instanceof Error ? error2.message : String(error2);
-  }
-};
-
-// packages/publisher-hashnode/src/hashnode-plugin.ts
-var HashnodePublisherPlugin = class {
-  id = "hashnode";
-  name = "Hashnode Publisher";
-  version = "1.0.0";
-  type = "publisher";
-  description = "Official Hashnode GraphQL cross-posting publisher plugin";
-  createPublisher(config) {
-    return new HashnodePublisher(config);
-  }
-};
-
 // packages/publisher-medium/src/medium-publisher.ts
 var MediumPublisher = class {
   platformId = "medium";
@@ -112798,7 +112596,6 @@ program2.name("devpublisher").description("Open source technical content syndica
 function createEngine(target, options2) {
   const engine = new DevPublisherEngine({ configPath: options2?.config });
   engine.use(new src_default());
-  engine.use(new HashnodePublisherPlugin());
   engine.use(new src_default2());
   engine.use(new src_default3());
   if (target) {
@@ -112823,7 +112620,7 @@ function createEngine(target, options2) {
   }
   return engine;
 }
-program2.command("publish").argument("[target]", "Markdown file or directory to publish", "content/blog").option("-p, --platforms <platforms>", "Comma-separated target platforms (e.g., devto,hashnode)").option("-c, --config <config>", "Path to devpublisher.yml config file").description("Publish markdown articles to configured platforms").action(async (target, options2) => {
+program2.command("publish").argument("[target]", "Markdown file or directory to publish", "content/blog").option("-p, --platforms <platforms>", "Comma-separated target platforms (e.g., devto,medium)").option("-c, --config <config>", "Path to devpublisher.yml config file").description("Publish markdown articles to configured platforms").action(async (target, options2) => {
   try {
     const engine = createEngine(target, options2);
     const result = await engine.run();
@@ -112902,8 +112699,6 @@ program2.command("doctor").description("Check system health, environment variabl
   console.log(
     `DEVTO_API_KEY:       ${hasDevtoKey ? "\u2705 Set" : "\u26A0\uFE0F Missing (Set DEVTO_API_KEY for Dev.to publishing)"}`
   );
-  const hasHashnodeKey = !!process.env.HASHNODE_API_KEY;
-  console.log(`HASHNODE_API_KEY:    ${hasHashnodeKey ? "\u2705 Set" : "\u26AA Not set"}`);
   const engine = createEngine();
   console.log(`Registered Plugins:  ${engine.listPlugins().length} active`);
   console.log("\nStatus: Ready for publishing \u{1F680}\n");

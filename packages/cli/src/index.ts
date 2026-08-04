@@ -3,7 +3,7 @@ import * as path from 'node:path';
 import { Command } from 'commander';
 import { DevPublisherEngine } from '@devpublisher/core';
 import DevtoPublisherPlugin from '@devpublisher/publisher-devto';
-import HashnodePublisherPlugin from '@devpublisher/publisher-hashnode';
+
 import MediumPublisherPlugin from '@devpublisher/publisher-medium';
 import TabnewsPublisherPlugin from '@devpublisher/publisher-tabnews';
 
@@ -22,7 +22,7 @@ function createEngine(
 
   // Register available publishers
   engine.use(new DevtoPublisherPlugin());
-  engine.use(new HashnodePublisherPlugin());
+
   engine.use(new MediumPublisherPlugin());
   engine.use(new TabnewsPublisherPlugin());
 
@@ -55,7 +55,7 @@ function createEngine(
 program
   .command('publish')
   .argument('[target]', 'Markdown file or directory to publish', 'content/blog')
-  .option('-p, --platforms <platforms>', 'Comma-separated target platforms (e.g., devto,hashnode)')
+  .option('-p, --platforms <platforms>', 'Comma-separated target platforms (e.g., devto,medium)')
   .option('-c, --config <config>', 'Path to devpublisher.yml config file')
   .description('Publish markdown articles to configured platforms')
   .action(async (target: string, options: { platforms?: string; config?: string }) => {
@@ -158,8 +158,7 @@ program
       `DEVTO_API_KEY:       ${hasDevtoKey ? '✅ Set' : '⚠️ Missing (Set DEVTO_API_KEY for Dev.to publishing)'}`
     );
 
-    const hasHashnodeKey = !!process.env.HASHNODE_API_KEY;
-    console.log(`HASHNODE_API_KEY:    ${hasHashnodeKey ? '✅ Set' : '⚪ Not set'}`);
+
 
     const engine = createEngine();
     console.log(`Registered Plugins:  ${engine.listPlugins().length} active`);
