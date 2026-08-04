@@ -23,6 +23,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@actions/artifact": "^6.2.1",
+    "@actions/core": "^3.0.1",
     "@devpublisher/core": "workspace:*",
     "@devpublisher/publisher-devto": "workspace:*",
     "@devpublisher/publisher-hashnode": "workspace:*",

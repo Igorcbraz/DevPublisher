@@ -189,7 +189,8 @@ export class HashnodePublisher implements Publisher {
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
-        Authorization: token
+        Authorization: token,
+        'User-Agent': 'DevPublisher/1.0'
       },
       body: JSON.stringify({ operationName: operation, query, variables })
     });

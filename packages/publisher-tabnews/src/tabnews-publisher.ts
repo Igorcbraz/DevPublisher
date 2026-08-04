@@ -46,7 +46,7 @@ export class TabnewsPublisher implements Publisher {
 
     const payload = {
       title: post.title,
-      body: post.content,
+      body: post.content.trim(),
       status: post.isPublished ? 'published' : 'draft',
       source_url: post.frontmatter.canonical || ''
     };

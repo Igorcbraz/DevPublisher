@@ -59,6 +59,28 @@ program
     try {
       const engine = createEngine(target, options);
       const result = await engine.run();
+
+      if (process.env.GITHUB_ACTIONS === 'true') {
+        const outDir = path.resolve(process.cwd(), '.devpublisher', 'medium-export');
+        if (fs.existsSync(outDir)) {
+          try {
+            const artifact = await import('@actions/artifact');
+            const core = await import('@actions/core');
+            const artifactClient = new artifact.DefaultArtifactClient();
+            const files = fs.readdirSync(outDir).map(file => path.join(outDir, file));
+            const { id, size } = await artifactClient.uploadArtifact(
+              'medium-exports',
+              files,
+              outDir,
+              { retentionDays: 7 }
+            );
+            core.info(`Successfully uploaded medium-exports artifact (ID: ${id}, size: ${size} bytes)`);
+          } catch (e: any) {
+            console.error('Failed to upload medium-exports artifact:', e.message);
+          }
+        }
+      }
+
       if (result.failedArticles > 0) {
         process.exit(1);
       }
