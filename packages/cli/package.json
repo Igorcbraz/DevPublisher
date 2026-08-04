@@ -27,6 +27,7 @@
     "@devpublisher/publisher-devto": "workspace:*",
     "@devpublisher/publisher-hashnode": "workspace:*",
     "@devpublisher/publisher-medium": "workspace:*",
+    "@devpublisher/publisher-tabnews": "workspace:*",
     "commander": "^12.1.0"
   },
   "devDependencies": {

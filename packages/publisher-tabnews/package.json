@@ -1,7 +1,7 @@
 {
-  "name": "@devpublisher/publisher-hashnode",
+  "name": "@devpublisher/publisher-tabnews",
   "version": "0.1.0",
-  "description": "Hashnode GraphQL publisher plugin for DevPublisher",
+  "description": "Tabnews publisher plugin for DevPublisher",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -18,7 +18,8 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist node_modules"
   },
   "dependencies": {
     "@devpublisher/core": "workspace:*"

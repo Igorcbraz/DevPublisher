@@ -5,6 +5,7 @@ import { DevPublisherEngine } from '@devpublisher/core';
 import DevtoPublisherPlugin from '@devpublisher/publisher-devto';
 import HashnodePublisherPlugin from '@devpublisher/publisher-hashnode';
 import MediumPublisherPlugin from '@devpublisher/publisher-medium';
+import TabnewsPublisherPlugin from '@devpublisher/publisher-tabnews';
 
 const program = new Command();
 
@@ -20,6 +21,7 @@ function createEngine(target?: string, options?: { platforms?: string; config?: 
   engine.use(new DevtoPublisherPlugin());
   engine.use(new HashnodePublisherPlugin());
   engine.use(new MediumPublisherPlugin());
+  engine.use(new TabnewsPublisherPlugin());
 
   if (target) {
     const isFile = fs.existsSync(target) && fs.statSync(target).isFile();

@@ -10677,6 +10677,7 @@ var BlogPost = class {
 var PlatformConfigSchema = external_exports.object({
   enabled: external_exports.boolean().default(true),
   apiKey: external_exports.string().optional(),
+  publicationId: external_exports.string().optional(),
   options: external_exports.record(external_exports.unknown()).optional().default({})
 });
 var SourceConfigSchema = external_exports.object({
@@ -11702,63 +11703,374 @@ var DevtoPublisherPlugin = class {
 // packages/publisher-devto/src/index.ts
 var src_default = DevtoPublisherPlugin;
 
-// packages/publisher-hashnode/src/index.ts
+// packages/publisher-hashnode/src/hashnode-publisher.ts
+var HASHNODE_ENDPOINT = "https://gql.hashnode.com";
+var PUBLISH_POST_MUTATION = `
+  mutation PublishPost($input: PublishPostInput!) {
+    publishPost(input: $input) {
+      post {
+        id
+        url
+      }
+    }
+  }
+`;
+var UPDATE_POST_MUTATION = `
+  mutation UpdatePost($input: UpdatePostInput!) {
+    updatePost(input: $input) {
+      post {
+        id
+        url
+      }
+    }
+  }
+`;
 var HashnodePublisher = class {
+  constructor(config) {
+    this.config = config;
+  }
+  config;
   platformId = "hashnode";
   platformName = "Hashnode";
-  async validate(_post) {
-    throw new Error("HashnodePublisher is not implemented yet");
+  async validate(post) {
+    const issues = [];
+    if (!post.title) {
+      issues.push({ field: "title", message: "Hashnode requires a title", severity: "error" });
+    }
+    if (!post.content.trim()) {
+      issues.push({ field: "content", message: "Hashnode requires article content", severity: "error" });
+    }
+    if (post.frontmatter.tags.length === 0) {
+      issues.push({ field: "tags", message: "Hashnode requires at least one tag", severity: "error" });
+    }
+    if (!this.getToken()) {
+      issues.push({ field: "token", message: "HASHNODE_TOKEN is required", severity: "error" });
+    }
+    if (!this.getPublicationId()) {
+      issues.push({ field: "publicationId", message: "HASHNODE_PUBLICATION_ID is required", severity: "error" });
+    }
+    return {
+      valid: issues.every((issue) => issue.severity !== "error"),
+      filePath: post.filePath,
+      issues
+    };
   }
-  async publish(_post, _options) {
-    throw new Error("HashnodePublisher is not implemented yet");
+  async publish(post, options2) {
+    const token = this.getToken(options2);
+    const publicationId = this.getPublicationId(options2);
+    const configurationError = this.getConfigurationError(token, publicationId);
+    if (configurationError) return this.failedResult(configurationError);
+    try {
+      const response = await this.executeMutation("publishPost", PUBLISH_POST_MUTATION, {
+        input: {
+          publicationId,
+          ...this.createPostInput(post)
+        }
+      }, token);
+      const publishedPost = response.data?.publishPost?.post;
+      if (!publishedPost) return this.failedResult("Hashnode did not return the published post");
+      return {
+        platformId: this.platformId,
+        platformName: this.platformName,
+        status: "published",
+        externalId: publishedPost.id,
+        url: publishedPost.url,
+        message: "Successfully published to Hashnode"
+      };
+    } catch (error) {
+      return this.failedResult(this.errorMessage(error));
+    }
   }
-  async update(_post, _externalId, _options) {
-    throw new Error("HashnodePublisher is not implemented yet");
+  async update(post, externalId, options2) {
+    const token = this.getToken(options2);
+    const publicationId = this.getPublicationId(options2);
+    const configurationError = this.getConfigurationError(token, publicationId);
+    if (configurationError) return this.failedResult(configurationError);
+    try {
+      const response = await this.executeMutation("updatePost", UPDATE_POST_MUTATION, {
+        input: {
+          id: externalId,
+          ...this.createPostInput(post)
+        }
+      }, token);
+      const updatedPost = response.data?.updatePost?.post;
+      if (!updatedPost) return this.failedResult("Hashnode did not return the updated post");
+      return {
+        platformId: this.platformId,
+        platformName: this.platformName,
+        status: "updated",
+        externalId: updatedPost.id,
+        url: updatedPost.url,
+        message: "Successfully updated on Hashnode"
+      };
+    } catch (error) {
+      return this.failedResult(this.errorMessage(error));
+    }
   }
   async delete(_externalId, _options) {
-    throw new Error("HashnodePublisher is not implemented yet");
+    return this.failedResult("Hashnode deletion is not supported by this publisher");
+  }
+  getToken(options2) {
+    return options2?.apiKey || this.config?.apiKey || process.env.HASHNODE_TOKEN;
+  }
+  getPublicationId(options2) {
+    return options2?.config?.publicationId || this.config?.publicationId || process.env.HASHNODE_PUBLICATION_ID;
+  }
+  getConfigurationError(token, publicationId) {
+    if (!token) return "Hashnode token is missing. Set HASHNODE_TOKEN.";
+    if (!publicationId) return "Hashnode publication ID is missing. Set HASHNODE_PUBLICATION_ID.";
+    return void 0;
+  }
+  createPostInput(post) {
+    const input = {
+      title: post.title,
+      contentMarkdown: post.content,
+      slug: post.slug,
+      tags: post.frontmatter.tags.map((tag) => ({ name: tag, slug: this.toTagSlug(tag) }))
+    };
+    if (post.frontmatter.description) input.subtitle = post.frontmatter.description;
+    if (post.frontmatter.canonical) input.originalArticleURL = post.frontmatter.canonical;
+    if (post.frontmatter.cover) input.coverImageOptions = { coverImageURL: post.frontmatter.cover };
+    return input;
+  }
+  async executeMutation(operation, query, variables, token) {
+    const response = await fetch(HASHNODE_ENDPOINT, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        Authorization: token
+      },
+      body: JSON.stringify({ operationName: operation, query, variables })
+    });
+    if (!response.ok) {
+      throw new Error(`Hashnode API returned status ${response.status}: ${await response.text()}`);
+    }
+    const payload = await response.json();
+    if (payload.errors?.length) {
+      throw new Error(payload.errors.map((error) => error.message || "Unknown GraphQL error").join("; "));
+    }
+    return payload;
+  }
+  toTagSlug(tag) {
+    return tag.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  }
+  failedResult(message) {
+    return {
+      platformId: this.platformId,
+      platformName: this.platformName,
+      status: "failed",
+      message
+    };
+  }
+  errorMessage(error) {
+    return error instanceof Error ? error.message : String(error);
   }
 };
+
+// packages/publisher-hashnode/src/hashnode-plugin.ts
 var HashnodePublisherPlugin = class {
   id = "hashnode";
-  name = "Hashnode Publisher (Stub)";
-  version = "0.1.0";
+  name = "Hashnode Publisher";
+  version = "1.0.0";
   type = "publisher";
-  description = "Hashnode publisher plugin (Not Implemented)";
-  createPublisher(_config) {
-    return new HashnodePublisher();
+  description = "Official Hashnode GraphQL cross-posting publisher plugin";
+  createPublisher(config) {
+    return new HashnodePublisher(config);
   }
 };
-var src_default2 = HashnodePublisherPlugin;
 
-// packages/publisher-medium/src/index.ts
+// packages/publisher-medium/src/medium-publisher.ts
 var MediumPublisher = class {
   platformId = "medium";
   platformName = "Medium";
-  async validate(_post) {
-    throw new Error("MediumPublisher is not implemented yet");
+  async validate(post) {
+    const issues = [];
+    if (!post.title) {
+      issues.push({ field: "title", message: "Medium requires a title", severity: "error" });
+    }
+    if (!post.content) {
+      issues.push({ field: "content", message: "Medium requires article content", severity: "error" });
+    }
+    return {
+      valid: issues.filter((i) => i.severity === "error").length === 0,
+      filePath: post.filePath,
+      issues
+    };
   }
-  async publish(_post, _options) {
-    throw new Error("MediumPublisher is not implemented yet");
+  async publish(post, _options) {
+    try {
+      const fs6 = await import("fs");
+      const path7 = await import("path");
+      const outDir = path7.resolve(process.cwd(), ".devpublisher", "medium-export");
+      if (!fs6.existsSync(outDir)) {
+        fs6.mkdirSync(outDir, { recursive: true });
+      }
+      const fileName = path7.basename(post.filePath);
+      const outPath = path7.join(outDir, fileName);
+      let contentToExport = post.content;
+      if (post.frontmatter.canonical) {
+        contentToExport += `
+
+*Originally published at [${post.frontmatter.canonical}](${post.frontmatter.canonical}).*`;
+      }
+      fs6.writeFileSync(outPath, contentToExport, "utf-8");
+      return {
+        platformId: this.platformId,
+        platformName: this.platformName,
+        status: "published",
+        externalId: outPath,
+        url: `file://${outPath}`,
+        message: `Arquivo exportado para ${outPath} (pronto para copiar e colar no Medium)`
+      };
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      return {
+        platformId: this.platformId,
+        platformName: this.platformName,
+        status: "failed",
+        error,
+        message: error.message
+      };
+    }
   }
   async update(_post, _externalId, _options) {
-    throw new Error("MediumPublisher is not implemented yet");
+    return {
+      platformId: this.platformId,
+      platformName: this.platformName,
+      status: "failed",
+      message: "Medium API does not support updating posts programmatically"
+    };
   }
   async delete(_externalId, _options) {
-    throw new Error("MediumPublisher is not implemented yet");
+    return {
+      platformId: this.platformId,
+      platformName: this.platformName,
+      status: "failed",
+      message: "Medium API does not support deleting posts programmatically"
+    };
   }
 };
+
+// packages/publisher-medium/src/medium-plugin.ts
 var MediumPublisherPlugin = class {
   id = "medium";
-  name = "Medium Publisher (Stub)";
-  version = "0.1.0";
+  name = "Medium Publisher";
+  version = "1.0.0";
   type = "publisher";
-  description = "Medium publisher plugin (Not Implemented)";
+  description = "Medium publisher plugin";
   createPublisher(_config) {
     return new MediumPublisher();
   }
 };
-var src_default3 = MediumPublisherPlugin;
+
+// packages/publisher-medium/src/index.ts
+var src_default2 = MediumPublisherPlugin;
+
+// packages/publisher-tabnews/dist/index.js
+var TabnewsPublisher = class {
+  platformId = "tabnews";
+  platformName = "TabNews";
+  config;
+  constructor(config) {
+    this.config = config;
+  }
+  async validate(post) {
+    const issues = [];
+    if (!post.title) {
+      issues.push({ field: "title", message: "TabNews requires a title", severity: "error" });
+    }
+    if (!post.content) {
+      issues.push({ field: "content", message: "TabNews requires article content", severity: "error" });
+    }
+    return {
+      valid: issues.filter((i) => i.severity === "error").length === 0,
+      filePath: post.filePath,
+      issues
+    };
+  }
+  async publish(post, options2) {
+    const sessionId = options2?.apiKey || this.config?.apiKey || process.env.TABNEWS_SESSION_ID;
+    if (!sessionId) {
+      return {
+        platformId: this.platformId,
+        platformName: this.platformName,
+        status: "failed",
+        message: "TabNews session ID is missing. Set TABNEWS_SESSION_ID environment variable."
+      };
+    }
+    const payload = {
+      title: post.title,
+      body: post.content,
+      status: post.isPublished ? "published" : "draft",
+      source_url: post.frontmatter.canonical || ""
+    };
+    try {
+      const response = await fetch("https://www.tabnews.com.br/api/v1/contents", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Cookie": `session_id=${sessionId}`
+        },
+        body: JSON.stringify(payload)
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        return {
+          platformId: this.platformId,
+          platformName: this.platformName,
+          status: "failed",
+          message: `TabNews API returned status ${response.status}: ${errorText}`
+        };
+      }
+      const data = await response.json();
+      return {
+        platformId: this.platformId,
+        platformName: this.platformName,
+        status: "published",
+        externalId: data.id,
+        url: `https://www.tabnews.com.br/${data.owner_username}/${data.slug}`,
+        message: "Successfully published to TabNews"
+      };
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      return {
+        platformId: this.platformId,
+        platformName: this.platformName,
+        status: "failed",
+        error,
+        message: error.message
+      };
+    }
+  }
+  async update(_post, _externalId, _options) {
+    return {
+      platformId: this.platformId,
+      platformName: this.platformName,
+      status: "failed",
+      message: "TabNews update is not implemented yet in this plugin."
+    };
+  }
+  async delete(_externalId, _options) {
+    return {
+      platformId: this.platformId,
+      platformName: this.platformName,
+      status: "failed",
+      message: "TabNews deletion is not implemented yet in this plugin."
+    };
+  }
+};
+var TabnewsPublisherPlugin = class {
+  id = "tabnews";
+  name = "TabNews Publisher";
+  version = "1.0.0";
+  type = "publisher";
+  description = "TabNews publisher plugin";
+  createPublisher(config) {
+    return new TabnewsPublisher(config);
+  }
+};
+var index_default = TabnewsPublisherPlugin;
 
 // packages/cli/src/index.ts
 var program2 = new Command();
@@ -11766,8 +12078,9 @@ program2.name("devpublisher").description("Open source technical content syndica
 function createEngine(target, options2) {
   const engine = new DevPublisherEngine({ configPath: options2?.config });
   engine.use(new src_default());
+  engine.use(new HashnodePublisherPlugin());
   engine.use(new src_default2());
-  engine.use(new src_default3());
+  engine.use(new index_default());
   if (target) {
     const isFile = fs5.existsSync(target) && fs5.statSync(target).isFile();
     if (isFile) {

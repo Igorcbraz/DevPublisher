@@ -3,6 +3,7 @@ import { z } from 'zod';
 export const PlatformConfigSchema = z.object({
   enabled: z.boolean().default(true),
   apiKey: z.string().optional(),
+  publicationId: z.string().optional(),
   options: z.record(z.unknown()).optional().default({})
 });
 
