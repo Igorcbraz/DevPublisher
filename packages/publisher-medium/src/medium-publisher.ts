@@ -13,10 +13,18 @@ export class MediumPublisher implements Publisher {
   async validate(post: BlogPost): Promise<ValidationResult> {
     const issues = [];
     if (!post.title) {
-      issues.push({ field: 'title', message: 'Medium requires a title', severity: 'error' as const });
+      issues.push({
+        field: 'title',
+        message: 'Medium requires a title',
+        severity: 'error' as const
+      });
     }
     if (!post.content) {
-      issues.push({ field: 'content', message: 'Medium requires article content', severity: 'error' as const });
+      issues.push({
+        field: 'content',
+        message: 'Medium requires article content',
+        severity: 'error' as const
+      });
     }
 
     return {
@@ -30,7 +38,7 @@ export class MediumPublisher implements Publisher {
     try {
       const fs = await import('fs');
       const path = await import('path');
-      
+
       const outDir = path.resolve(process.cwd(), '.devpublisher', 'medium-export');
       if (!fs.existsSync(outDir)) {
         fs.mkdirSync(outDir, { recursive: true });
@@ -38,7 +46,7 @@ export class MediumPublisher implements Publisher {
 
       const fileName = path.basename(post.filePath);
       const outPath = path.join(outDir, fileName);
-      
+
       let contentToExport = post.content;
       if (post.frontmatter.canonical) {
         contentToExport += `\n\n*Originally published at [${post.frontmatter.canonical}](${post.frontmatter.canonical}).*`;
@@ -66,7 +74,11 @@ export class MediumPublisher implements Publisher {
     }
   }
 
-  async update(_post: BlogPost, _externalId: string, _options?: PublisherOptions): Promise<PlatformResult> {
+  async update(
+    _post: BlogPost,
+    _externalId: string,
+    _options?: PublisherOptions
+  ): Promise<PlatformResult> {
     return {
       platformId: this.platformId,
       platformName: this.platformName,

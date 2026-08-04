@@ -77,7 +77,9 @@ export class DevPublisherEngine {
       ctx.articles = await fileLoader.load(ctx.config.source);
     }
 
-    const validatorStage = new (await import('./pipeline/stages/validator-stage.js')).ValidatorStage();
+    const validatorStage = new (
+      await import('./pipeline/stages/validator-stage.js')
+    ).ValidatorStage();
     await validatorStage.execute(ctx, this.registry);
 
     return ctx.validationResults;

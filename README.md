@@ -49,16 +49,16 @@ devpublisher init
 Example `devpublisher.yml`:
 
 ```yaml
-version: "1"
+version: '1'
 
 source:
-  folder: "content/blog"
-  match: "**/*.md"
+  folder: 'content/blog'
+  match: '**/*.md'
 
 platforms:
   devto:
     enabled: true
-    apiKey: "${DEVTO_API_KEY}"
+    apiKey: '${DEVTO_API_KEY}'
 
 pipeline:
   validators:
@@ -66,8 +66,8 @@ pipeline:
   transformers:
     - canonical-url
   tracking:
-    provider: "file"
-    file: ".devpublisher/state.json"
+    provider: 'file'
+    file: '.devpublisher/state.json'
 ```
 
 ---
@@ -77,12 +77,14 @@ pipeline:
 ### Publish Articles
 
 Publish all markdown files in a directory:
+
 ```bash
 export DEVTO_API_KEY="your-devto-api-key"
 devpublisher publish content/blog
 ```
 
 Publish a single article to specific platforms:
+
 ```bash
 devpublisher publish content/blog/my-article.md --platforms devto
 ```
@@ -90,6 +92,7 @@ devpublisher publish content/blog/my-article.md --platforms devto
 ### Validate Articles
 
 Validate frontmatter and markdown structure without publishing:
+
 ```bash
 devpublisher validate content/blog
 ```
@@ -97,6 +100,7 @@ devpublisher validate content/blog
 ### List Registered Plugins
 
 Display all loaded loaders, validators, transformers, publishers, and reporters:
+
 ```bash
 devpublisher list
 ```
@@ -104,6 +108,7 @@ devpublisher list
 ### System Health Check
 
 Verify environment variables and system dependencies:
+
 ```bash
 devpublisher doctor
 ```
@@ -161,7 +166,13 @@ To create a new platform publisher:
 1. Implement the `Publisher` and `PublisherPlugin` contracts from `@devpublisher/core`:
 
 ```typescript
-import { Publisher, PublisherPlugin, BlogPost, PlatformResult, PublisherOptions } from '@devpublisher/core';
+import {
+  Publisher,
+  PublisherPlugin,
+  BlogPost,
+  PlatformResult,
+  PublisherOptions
+} from '@devpublisher/core';
 
 export class CustomPublisher implements Publisher {
   readonly platformId = 'custom';
@@ -182,7 +193,11 @@ export class CustomPublisher implements Publisher {
     };
   }
 
-  async update(post: BlogPost, externalId: string, options?: PublisherOptions): Promise<PlatformResult> {
+  async update(
+    post: BlogPost,
+    externalId: string,
+    options?: PublisherOptions
+  ): Promise<PlatformResult> {
     // Implement update API call
     return {
       platformId: this.platformId,
@@ -212,6 +227,7 @@ export class CustomPublisherPlugin implements PublisherPlugin {
 ```
 
 2. Register your plugin with the engine:
+
 ```typescript
 import { DevPublisherEngine } from '@devpublisher/core';
 import { CustomPublisherPlugin } from './custom-plugin';

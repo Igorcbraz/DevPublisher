@@ -1,22 +1,22 @@
 # DevPublisher Configuration File
-version: "1"
+version: '1'
 
 # Source articles configuration
 source:
-  folder: "content/blog"
-  match: "**/*.md"
+  folder: 'content/blog'
+  match: '**/*.md'
 
 # Target platform settings
 platforms:
   devto:
     enabled: true
-    apiKey: "${DEVTO_API_KEY}"
+    apiKey: '${DEVTO_API_KEY}'
   hashnode:
     enabled: false
-    apiKey: "${HASHNODE_API_KEY}"
+    apiKey: '${HASHNODE_API_KEY}'
   medium:
     enabled: false
-    apiKey: "${MEDIUM_API_KEY}"
+    apiKey: '${MEDIUM_API_KEY}'
 
 # Execution pipeline settings
 pipeline:
@@ -27,5 +27,5 @@ pipeline:
     - canonical-url
     - absolute-images
   tracking:
-    provider: "file"
-    file: ".devpublisher/state.json"
+    provider: 'file'
+    file: '.devpublisher/state.json'

@@ -19,10 +19,18 @@ export class TabnewsPublisher implements Publisher {
   async validate(post: BlogPost): Promise<ValidationResult> {
     const issues = [];
     if (!post.title) {
-      issues.push({ field: 'title', message: 'TabNews requires a title', severity: 'error' as const });
+      issues.push({
+        field: 'title',
+        message: 'TabNews requires a title',
+        severity: 'error' as const
+      });
     }
     if (!post.content) {
-      issues.push({ field: 'content', message: 'TabNews requires article content', severity: 'error' as const });
+      issues.push({
+        field: 'content',
+        message: 'TabNews requires article content',
+        severity: 'error' as const
+      });
     }
 
     return {
@@ -33,7 +41,8 @@ export class TabnewsPublisher implements Publisher {
   }
 
   async publish(post: BlogPost, options?: PublisherOptions): Promise<PlatformResult> {
-    const sessionId = options?.apiKey || (this.config?.apiKey as string) || process.env.TABNEWS_SESSION_ID;
+    const sessionId =
+      options?.apiKey || (this.config?.apiKey as string) || process.env.TABNEWS_SESSION_ID;
 
     if (!sessionId) {
       return {
@@ -44,19 +53,21 @@ export class TabnewsPublisher implements Publisher {
       };
     }
 
-    const payload = {
+    const payload: Record<string, any> = {
       title: post.title,
       body: post.content.trim(),
-      status: post.isPublished ? 'published' : 'draft',
-      source_url: post.frontmatter.canonical || ''
+      status: post.isPublished ? 'published' : 'draft'
     };
+    if (post.frontmatter.canonical) {
+      payload.source_url = post.frontmatter.canonical;
+    }
 
     try {
       const response = await fetch('https://www.tabnews.com.br/api/v1/contents', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Cookie': `session_id=${sessionId}`
+          Cookie: `session_id=${sessionId}`
         },
         body: JSON.stringify(payload)
       });
@@ -92,7 +103,11 @@ export class TabnewsPublisher implements Publisher {
     }
   }
 
-  async update(_post: BlogPost, _externalId: string, _options?: PublisherOptions): Promise<PlatformResult> {
+  async update(
+    _post: BlogPost,
+    _externalId: string,
+    _options?: PublisherOptions
+  ): Promise<PlatformResult> {
     return {
       platformId: this.platformId,
       platformName: this.platformName,

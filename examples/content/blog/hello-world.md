@@ -1,14 +1,14 @@
 ---
-title: "Hello World with DevPublisher"
-description: "My first article automatically published using DevPublisher"
-slug: "hello-world-devpublisher"
-canonical: "https://myblog.com/posts/hello-world-devpublisher"
+title: 'Hello World with DevPublisher'
+description: 'My first article automatically published using DevPublisher'
+slug: 'hello-world-devpublisher'
+canonical: 'https://myblog.com/posts/hello-world-devpublisher'
 tags:
   - typescript
   - open-source
 published: true
-cover: "https://images.unsplash.com/photo-1517694712202-14dd9538aa97"
-series: "DevPublisher Guides"
+cover: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97'
+series: 'DevPublisher Guides'
 ---
 
 # Hello World with DevPublisher

@@ -14,7 +14,10 @@ program
   .description('Open source technical content syndication CLI')
   .version('0.1.0');
 
-function createEngine(target?: string, options?: { platforms?: string; config?: string }): DevPublisherEngine {
+function createEngine(
+  target?: string,
+  options?: { platforms?: string; config?: string }
+): DevPublisherEngine {
   const engine = new DevPublisherEngine({ configPath: options?.config });
 
   // Register available publishers
@@ -67,14 +70,16 @@ program
             const artifact = await import('@actions/artifact');
             const core = await import('@actions/core');
             const artifactClient = new artifact.DefaultArtifactClient();
-            const files = fs.readdirSync(outDir).map(file => path.join(outDir, file));
+            const files = fs.readdirSync(outDir).map((file) => path.join(outDir, file));
             const { id, size } = await artifactClient.uploadArtifact(
               'medium-exports',
               files,
               outDir,
               { retentionDays: 7 }
             );
-            core.info(`Successfully uploaded medium-exports artifact (ID: ${id}, size: ${size} bytes)`);
+            core.info(
+              `Successfully uploaded medium-exports artifact (ID: ${id}, size: ${size} bytes)`
+            );
           } catch (e: any) {
             console.error('Failed to upload medium-exports artifact:', e.message);
           }
@@ -106,7 +111,9 @@ program
         const icon = res.valid ? '✅' : '❌';
         console.log(`${icon} ${res.filePath}`);
         for (const issue of res.issues) {
-          console.log(`   [${issue.severity.toUpperCase()}] ${issue.field ? `${issue.field}: ` : ''}${issue.message}`);
+          console.log(
+            `   [${issue.severity.toUpperCase()}] ${issue.field ? `${issue.field}: ` : ''}${issue.message}`
+          );
         }
         if (!res.valid) hasError = true;
       }
@@ -128,7 +135,9 @@ program
 
     console.log('\n🔌 Registered DevPublisher Plugins:\n');
     for (const plugin of plugins) {
-      console.log(`- [${plugin.type.toUpperCase()}] ${plugin.name} (id: ${plugin.id}, v${plugin.version})`);
+      console.log(
+        `- [${plugin.type.toUpperCase()}] ${plugin.name} (id: ${plugin.id}, v${plugin.version})`
+      );
       if (plugin.description) {
         console.log(`  ${plugin.description}`);
       }
@@ -145,7 +154,9 @@ program
     console.log(`Working Directory:   ${process.cwd()}`);
 
     const hasDevtoKey = !!process.env.DEVTO_API_KEY;
-    console.log(`DEVTO_API_KEY:       ${hasDevtoKey ? '✅ Set' : '⚠️ Missing (Set DEVTO_API_KEY for Dev.to publishing)'}`);
+    console.log(
+      `DEVTO_API_KEY:       ${hasDevtoKey ? '✅ Set' : '⚠️ Missing (Set DEVTO_API_KEY for Dev.to publishing)'}`
+    );
 
     const hasHashnodeKey = !!process.env.HASHNODE_API_KEY;
     console.log(`HASHNODE_API_KEY:    ${hasHashnodeKey ? '✅ Set' : '⚪ Not set'}`);

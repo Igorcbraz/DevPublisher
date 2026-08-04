@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { BlogPost, DevPublisherEngine, MemoryCacheProvider, MemoryTrackingProvider } from '@devpublisher/core';
+import {
+  BlogPost,
+  DevPublisherEngine,
+  MemoryCacheProvider,
+  MemoryTrackingProvider
+} from '@devpublisher/core';
 import { HashnodePublisherPlugin } from '../hashnode-plugin.js';
 import { HashnodePublisher } from '../hashnode-publisher.js';
 
@@ -50,13 +55,20 @@ describe('HashnodePublisher', () => {
     expect(result.issues).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ field: 'token', message: 'HASHNODE_TOKEN is required' }),
-        expect.objectContaining({ field: 'publicationId', message: 'HASHNODE_PUBLICATION_ID is required' })
+        expect.objectContaining({
+          field: 'publicationId',
+          message: 'HASHNODE_PUBLICATION_ID is required'
+        })
       ])
     );
   });
 
   it('publishes a new post through the Hashnode GraphQL API', async () => {
-    const publisher = new HashnodePublisher({ apiKey: 'hashnode-token', publicationId: 'publication-123', options: {} });
+    const publisher = new HashnodePublisher({
+      apiKey: 'hashnode-token',
+      publicationId: 'publication-123',
+      options: {}
+    });
     mockSuccess('publishPost');
 
     const result = await publisher.publish(createPost());
@@ -77,13 +89,19 @@ describe('HashnodePublisher', () => {
   });
 
   it('updates an existing post through the Hashnode GraphQL API', async () => {
-    const publisher = new HashnodePublisher({ apiKey: 'hashnode-token', publicationId: 'publication-123', options: {} });
+    const publisher = new HashnodePublisher({
+      apiKey: 'hashnode-token',
+      publicationId: 'publication-123',
+      options: {}
+    });
     mockSuccess('updatePost');
 
     const result = await publisher.update(createPost(), 'hashnode-post-123');
 
     expect(result).toMatchObject({ status: 'updated', externalId: 'hashnode-post-123' });
-    const requestBody = JSON.parse((global.fetch as ReturnType<typeof vi.fn>).mock.calls[0]?.[1]?.body as string);
+    const requestBody = JSON.parse(
+      (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0]?.[1]?.body as string
+    );
     expect(requestBody.variables.input.id).toBe('hashnode-post-123');
   });
 

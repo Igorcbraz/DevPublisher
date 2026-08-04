@@ -139,12 +139,17 @@ describe('DevPublisher Pipeline Engine', () => {
     const plugin = new MockPublisherPlugin();
     const tracking = new MemoryTrackingProvider();
 
-    await tracking.setPlatformState('hello-world-devpublisher', 'outdated-checksum', 'mock-platform', {
-      externalId: 'mock-123',
-      url: 'https://mock.com/hello-world-devpublisher',
-      publishedAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    });
+    await tracking.setPlatformState(
+      'hello-world-devpublisher',
+      'outdated-checksum',
+      'mock-platform',
+      {
+        externalId: 'mock-123',
+        url: 'https://mock.com/hello-world-devpublisher',
+        publishedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+    );
     engine.use(plugin);
 
     const result = await engine.run({ tracking, cache: new MemoryCacheProvider() });

@@ -19,10 +19,18 @@ export class DevtoPublisher implements Publisher {
   async validate(post: BlogPost): Promise<ValidationResult> {
     const issues = [];
     if (!post.title) {
-      issues.push({ field: 'title', message: 'Dev.to requires a title', severity: 'error' as const });
+      issues.push({
+        field: 'title',
+        message: 'Dev.to requires a title',
+        severity: 'error' as const
+      });
     }
     if (!post.content) {
-      issues.push({ field: 'content', message: 'Dev.to requires article content', severity: 'error' as const });
+      issues.push({
+        field: 'content',
+        message: 'Dev.to requires article content',
+        severity: 'error' as const
+      });
     }
     if (post.frontmatter.tags && post.frontmatter.tags.length > 4) {
       issues.push({
@@ -47,7 +55,8 @@ export class DevtoPublisher implements Publisher {
         platformId: this.platformId,
         platformName: this.platformName,
         status: 'failed',
-        message: 'Dev.to API key is missing. Set DEVTO_API_KEY environment variable or config apiKey.'
+        message:
+          'Dev.to API key is missing. Set DEVTO_API_KEY environment variable or config apiKey.'
       };
     }
 
@@ -105,7 +114,11 @@ export class DevtoPublisher implements Publisher {
     }
   }
 
-  async update(post: BlogPost, externalId: string, options?: PublisherOptions): Promise<PlatformResult> {
+  async update(
+    post: BlogPost,
+    externalId: string,
+    options?: PublisherOptions
+  ): Promise<PlatformResult> {
     const apiKey = options?.apiKey || (this.config?.apiKey as string) || process.env.DEVTO_API_KEY;
 
     if (!apiKey) {

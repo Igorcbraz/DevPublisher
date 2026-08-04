@@ -112498,8 +112498,7 @@ var HashnodePublisher = class {
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
-        Authorization: token,
-        "User-Agent": "DevPublisher/1.0"
+        Authorization: token
       },
       body: JSON.stringify({ operationName: operation, query, variables })
     });
@@ -112662,9 +112661,11 @@ var TabnewsPublisher = class {
     const payload = {
       title: post.title,
       body: post.content.trim(),
-      status: post.isPublished ? "published" : "draft",
-      source_url: post.frontmatter.canonical || ""
+      status: post.isPublished ? "published" : "draft"
     };
+    if (post.frontmatter.canonical) {
+      payload.source_url = post.frontmatter.canonical;
+    }
     try {
       const response = await fetch("https://www.tabnews.com.br/api/v1/contents", {
         method: "POST",

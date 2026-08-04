@@ -72,7 +72,9 @@ export class PublisherStage implements PipelineStage {
               };
             } else {
               // Already published with changed content -> update
-              ctx.logger.info(`Updating article '${post.slug}' on ${plugin.name} (ID: ${platformState.externalId})...`);
+              ctx.logger.info(
+                `Updating article '${post.slug}' on ${plugin.name} (ID: ${platformState.externalId})...`
+              );
               result = await publisher.update(post, platformState.externalId, {
                 apiKey: platformConfig.apiKey,
                 config: platformConfig
@@ -98,7 +100,11 @@ export class PublisherStage implements PipelineStage {
             }
             ctx.events.emit('publish:success', { post, platformId, result });
           } else if (result.status === 'skipped') {
-            ctx.events.emit('publish:skipped', { post, platformId, reason: result.message || 'Skipped' });
+            ctx.events.emit('publish:skipped', {
+              post,
+              platformId,
+              reason: result.message || 'Skipped'
+            });
           } else {
             ctx.events.emit('publish:failed', { post, platformId, result });
           }

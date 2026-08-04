@@ -1,4 +1,5 @@
-export type PluginType = 'loader' | 'validator' | 'enricher' | 'transformer' | 'publisher' | 'reporter';
+export type PluginType =
+  'loader' | 'validator' | 'enricher' | 'transformer' | 'publisher' | 'reporter';
 
 export interface DevPublisherPlugin {
   readonly id: string;

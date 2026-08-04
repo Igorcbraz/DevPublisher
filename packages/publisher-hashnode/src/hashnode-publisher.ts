@@ -68,16 +68,28 @@ export class HashnodePublisher implements Publisher {
       issues.push({ field: 'title', message: 'Hashnode requires a title', severity: 'error' });
     }
     if (!post.content.trim()) {
-      issues.push({ field: 'content', message: 'Hashnode requires article content', severity: 'error' });
+      issues.push({
+        field: 'content',
+        message: 'Hashnode requires article content',
+        severity: 'error'
+      });
     }
     if (post.frontmatter.tags.length === 0) {
-      issues.push({ field: 'tags', message: 'Hashnode requires at least one tag', severity: 'error' });
+      issues.push({
+        field: 'tags',
+        message: 'Hashnode requires at least one tag',
+        severity: 'error'
+      });
     }
     if (!this.getToken()) {
       issues.push({ field: 'token', message: 'HASHNODE_TOKEN is required', severity: 'error' });
     }
     if (!this.getPublicationId()) {
-      issues.push({ field: 'publicationId', message: 'HASHNODE_PUBLICATION_ID is required', severity: 'error' });
+      issues.push({
+        field: 'publicationId',
+        message: 'HASHNODE_PUBLICATION_ID is required',
+        severity: 'error'
+      });
     }
 
     return {
@@ -94,12 +106,17 @@ export class HashnodePublisher implements Publisher {
     if (configurationError) return this.failedResult(configurationError);
 
     try {
-      const response = await this.executeMutation('publishPost', PUBLISH_POST_MUTATION, {
-        input: {
-          publicationId,
-          ...this.createPostInput(post)
-        }
-      }, token!);
+      const response = await this.executeMutation(
+        'publishPost',
+        PUBLISH_POST_MUTATION,
+        {
+          input: {
+            publicationId,
+            ...this.createPostInput(post)
+          }
+        },
+        token!
+      );
       const publishedPost = response.data?.publishPost?.post;
       if (!publishedPost) return this.failedResult('Hashnode did not return the published post');
 
@@ -116,19 +133,28 @@ export class HashnodePublisher implements Publisher {
     }
   }
 
-  async update(post: BlogPost, externalId: string, options?: PublisherOptions): Promise<PlatformResult> {
+  async update(
+    post: BlogPost,
+    externalId: string,
+    options?: PublisherOptions
+  ): Promise<PlatformResult> {
     const token = this.getToken(options);
     const publicationId = this.getPublicationId(options);
     const configurationError = this.getConfigurationError(token, publicationId);
     if (configurationError) return this.failedResult(configurationError);
 
     try {
-      const response = await this.executeMutation('updatePost', UPDATE_POST_MUTATION, {
-        input: {
-          id: externalId,
-          ...this.createPostInput(post)
-        }
-      }, token!);
+      const response = await this.executeMutation(
+        'updatePost',
+        UPDATE_POST_MUTATION,
+        {
+          input: {
+            id: externalId,
+            ...this.createPostInput(post)
+          }
+        },
+        token!
+      );
       const updatedPost = response.data?.updatePost?.post;
       if (!updatedPost) return this.failedResult('Hashnode did not return the updated post');
 
@@ -154,7 +180,11 @@ export class HashnodePublisher implements Publisher {
   }
 
   private getPublicationId(options?: PublisherOptions): string | undefined {
-    return options?.config?.publicationId || this.config?.publicationId || process.env.HASHNODE_PUBLICATION_ID;
+    return (
+      options?.config?.publicationId ||
+      this.config?.publicationId ||
+      process.env.HASHNODE_PUBLICATION_ID
+    );
   }
 
   private getConfigurationError(token?: string, publicationId?: string): string | undefined {
@@ -189,8 +219,7 @@ export class HashnodePublisher implements Publisher {
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
-        Authorization: token,
-        'User-Agent': 'DevPublisher/1.0'
+        Authorization: token
       },
       body: JSON.stringify({ operationName: operation, query, variables })
     });
@@ -201,7 +230,9 @@ export class HashnodePublisher implements Publisher {
 
     const payload = (await response.json()) as HashnodeGraphqlResponse;
     if (payload.errors?.length) {
-      throw new Error(payload.errors.map((error) => error.message || 'Unknown GraphQL error').join('; '));
+      throw new Error(
+        payload.errors.map((error) => error.message || 'Unknown GraphQL error').join('; ')
+      );
     }
 
     return payload;

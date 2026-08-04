@@ -22,7 +22,12 @@ export interface TrackingState {
 
 export interface TrackingProvider {
   getArticleState(slug: string): Promise<ArticleState | null>;
-  setPlatformState(slug: string, checksum: string, platformId: string, state: Omit<PlatformPublishState, 'checksum'>): Promise<void>;
+  setPlatformState(
+    slug: string,
+    checksum: string,
+    platformId: string,
+    state: Omit<PlatformPublishState, 'checksum'>
+  ): Promise<void>;
   getAllStates(): Promise<Record<string, ArticleState>>;
 }
 

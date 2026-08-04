@@ -22,7 +22,12 @@ export class ConsoleReporterPlugin implements ReporterPlugin {
       console.log(`\n📄 Article: ${articleRes.title} (${articleRes.slug})`);
       console.log(`   File: ${articleRes.filePath}`);
       for (const pRes of articleRes.platformResults) {
-        const icon = pRes.status === 'published' || pRes.status === 'updated' ? '✅' : pRes.status === 'skipped' ? '⏭️' : '❌';
+        const icon =
+          pRes.status === 'published' || pRes.status === 'updated'
+            ? '✅'
+            : pRes.status === 'skipped'
+              ? '⏭️'
+              : '❌';
         console.log(`   ${icon} [${pRes.platformName}] ${pRes.status.toUpperCase()}`);
         if (pRes.url) console.log(`      URL: ${pRes.url}`);
         if (pRes.message) console.log(`      Message: ${pRes.message}`);
