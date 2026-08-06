@@ -4,6 +4,7 @@ import { DevPublisherConfig, DevPublisherConfigSchema } from '../models/config.j
 
 export class ConfigLoader {
   static load(configPath?: string, overrides?: Partial<DevPublisherConfig>): DevPublisherConfig {
+    ConfigLoader.loadEnv();
     let rawConfig: Record<string, unknown> = {};
 
     const targetPath = configPath || 'devpublisher.yml';
@@ -14,7 +15,6 @@ export class ConfigLoader {
       if (absolutePath.endsWith('.json')) {
         rawConfig = JSON.parse(content);
       } else {
-        // Basic YAML loader without heavy third party deps if simple, or parse basic lines
         rawConfig = ConfigLoader.parseSimpleYaml(content);
       }
     }
@@ -22,26 +22,42 @@ export class ConfigLoader {
     const merged = {
       ...rawConfig,
       ...overrides,
-      source: {
-        ...(rawConfig['source'] as object),
-        ...(overrides?.source as object)
-      },
-      platforms: {
-        ...(rawConfig['platforms'] as object),
-        ...(overrides?.platforms as object)
-      },
-      pipeline: {
-        ...(rawConfig['pipeline'] as object),
-        ...(overrides?.pipeline as object)
-      }
+      source: overrides?.source
+        ? { ...(rawConfig['source'] as object), ...overrides.source }
+        : rawConfig['source'] || {},
+      platforms: overrides?.platforms ? overrides.platforms : rawConfig['platforms'] || {},
+      pipeline: overrides?.pipeline
+        ? { ...(rawConfig['pipeline'] as object), ...overrides.pipeline }
+        : rawConfig['pipeline'] || {}
     };
 
     return DevPublisherConfigSchema.parse(merged);
   }
 
+  static loadEnv(customPath?: string): void {
+    const envPath = customPath
+      ? path.resolve(process.cwd(), customPath)
+      : path.resolve(process.cwd(), '.env');
+    if (fs.existsSync(envPath)) {
+      const content = fs.readFileSync(envPath, 'utf-8');
+      for (const line of content.split('\n')) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#') || !trimmed.includes('=')) continue;
+        const idx = trimmed.indexOf('=');
+        const key = trimmed.substring(0, idx).trim();
+        const value = trimmed
+          .substring(idx + 1)
+          .trim()
+          .replace(/^['"]|['"]$/g, '');
+        if (!process.env[key]) {
+          process.env[key] = value;
+        }
+      }
+    }
+  }
+
   private static parseSimpleYaml(content: string): Record<string, unknown> {
-    // Basic key-value parser for simple yml files without extra dependencies
-    const result: Record<string, any> = {};
+    const result: Record<string, any> = {}; // eslint-disable-line @typescript-eslint/no-explicit-any
     let currentSection: string | null = null;
     let currentSubSection: string | null = null;
 
@@ -52,17 +68,42 @@ export class ConfigLoader {
 
       const indent = line.search(/\S/);
 
+      if (trimmed.startsWith('- ')) {
+        const itemVal = ConfigLoader.parseYamlValue(trimmed.substring(2).trim());
+        if (currentSection && currentSubSection) {
+          if (!Array.isArray(result[currentSection][currentSubSection])) {
+            result[currentSection][currentSubSection] = [];
+          }
+          result[currentSection][currentSubSection].push(itemVal);
+        } else if (currentSection) {
+          if (!Array.isArray(result[currentSection])) {
+            result[currentSection] = [];
+          }
+          result[currentSection].push(itemVal);
+        }
+        continue;
+      }
+
       if (indent === 0 && line.includes(':')) {
-        const [key] = line.split(':');
-        currentSection = key!.trim();
-        currentSubSection = null;
-        if (!result[currentSection]) result[currentSection] = {};
+        const parts = line.split(':');
+        const key = parts[0]!.trim();
+        const val = parts.slice(1).join(':').trim();
+        if (val) {
+          result[key] = ConfigLoader.parseYamlValue(val);
+          currentSection = null;
+          currentSubSection = null;
+        } else {
+          currentSection = key;
+          currentSubSection = null;
+          if (!result[currentSection]) result[currentSection] = {};
+        }
       } else if (indent === 2 && currentSection && line.includes(':')) {
         const parts = line.split(':');
         const key = parts[0]!.trim();
         const val = parts.slice(1).join(':').trim();
         if (val) {
           result[currentSection][key] = ConfigLoader.parseYamlValue(val);
+          currentSubSection = null;
         } else {
           currentSubSection = key;
           if (!result[currentSection][currentSubSection]) {
@@ -83,13 +124,17 @@ export class ConfigLoader {
   private static parseYamlValue(val: string): unknown {
     if (val === 'true') return true;
     if (val === 'false') return false;
-    if (val.startsWith('"') && val.endsWith('"')) return val.slice(1, -1);
-    if (val.startsWith("'") && val.endsWith("'")) return val.slice(1, -1);
-    // Environment variable interpolation (${ENV_VAR})
-    if (val.startsWith('${') && val.endsWith('}')) {
-      const envKey = val.slice(2, -1);
+    let cleaned = val;
+    if (
+      (cleaned.startsWith('"') && cleaned.endsWith('"')) ||
+      (cleaned.startsWith("'") && cleaned.endsWith("'"))
+    ) {
+      cleaned = cleaned.slice(1, -1);
+    }
+    if (cleaned.startsWith('${') && cleaned.endsWith('}')) {
+      const envKey = cleaned.slice(2, -1);
       return process.env[envKey] || '';
     }
-    return val;
+    return cleaned;
   }
 }
