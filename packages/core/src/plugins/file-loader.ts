@@ -3,7 +3,7 @@ import * as path from 'node:path';
 import matter from 'gray-matter';
 import { LoaderPlugin } from '../registry/loader-registry.js';
 import { BlogPost } from '../models/blog-post.js';
-import { FrontmatterSchema } from '../models/frontmatter.js';
+import { FrontmatterInput } from '../models/frontmatter.js';
 import { SourceConfig } from '../models/config.js';
 
 export class FileLoaderPlugin implements LoaderPlugin {
@@ -37,13 +37,10 @@ export class FileLoaderPlugin implements LoaderPlugin {
       const rawContent = fs.readFileSync(filePath, 'utf-8');
       const { data, content } = matter(rawContent);
 
-      const parsedFrontmatter = FrontmatterSchema.safeParse(data);
-      const frontmatter = parsedFrontmatter.success ? parsedFrontmatter.data : (data as any);
-
       posts.push(
         new BlogPost({
           filePath,
-          frontmatter,
+          frontmatter: data as FrontmatterInput,
           content,
           rawContent
         })
