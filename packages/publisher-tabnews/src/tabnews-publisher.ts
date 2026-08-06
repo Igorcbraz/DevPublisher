@@ -53,7 +53,7 @@ export class TabnewsPublisher implements Publisher {
       };
     }
 
-    const payload: Record<string, any> = {
+    const payload: Record<string, string> = {
       title: post.title,
       body: post.content.trim(),
       status: post.isPublished ? 'published' : 'draft'
@@ -82,7 +82,11 @@ export class TabnewsPublisher implements Publisher {
         };
       }
 
-      const data = (await response.json()) as any;
+      const data = (await response.json()) as {
+        id?: string;
+        owner_username?: string;
+        slug?: string;
+      };
       return {
         platformId: this.platformId,
         platformName: this.platformName,

@@ -54,17 +54,16 @@ class MockPublisherPlugin implements PublisherPlugin {
 
   createPublisher(): Publisher {
     const publisher = new MockPublisher();
-    const plugin = this;
     return {
       platformId: publisher.platformId,
       platformName: publisher.platformName,
       validate: publisher.validate.bind(publisher),
-      async publish(post: BlogPost): Promise<PlatformResult> {
-        plugin.publishCalls += 1;
+      publish: async (post: BlogPost): Promise<PlatformResult> => {
+        this.publishCalls += 1;
         return publisher.publish(post);
       },
-      async update(post: BlogPost, externalId: string): Promise<PlatformResult> {
-        plugin.updateCalls += 1;
+      update: async (post: BlogPost, externalId: string): Promise<PlatformResult> => {
+        this.updateCalls += 1;
         return publisher.update(post, externalId);
       },
       delete: publisher.delete.bind(publisher)

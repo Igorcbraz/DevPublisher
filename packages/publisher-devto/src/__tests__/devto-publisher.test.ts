@@ -47,7 +47,7 @@ describe('DevtoPublisher', () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ id: 98765, url: 'https://dev.to/user/test-title' })
-    } as any);
+    } as unknown as Response);
 
     const res = await publisher.publish(post, { apiKey: 'devto-secret-key' });
 
@@ -63,5 +63,36 @@ describe('DevtoPublisher', () => {
         })
       })
     );
+  });
+
+  it('should fallback to process.env.DEVTO_API_KEY when no options or config apiKey is provided', async () => {
+    const originalKey = process.env.DEVTO_API_KEY;
+    process.env.DEVTO_API_KEY = 'env-devto-key-999';
+
+    const post = new BlogPost({
+      filePath: 'test.md',
+      frontmatter: { title: 'Env Key Test Post' },
+      content: 'Content body',
+      rawContent: 'raw'
+    });
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: 55555, url: 'https://dev.to/user/env-post' })
+    } as unknown as Response);
+
+    const res = await publisher.publish(post);
+
+    expect(res.status).toBe('published');
+    expect(global.fetch).toHaveBeenCalledWith(
+      'https://dev.to/api/articles',
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          'api-key': 'env-devto-key-999'
+        })
+      })
+    );
+
+    process.env.DEVTO_API_KEY = originalKey;
   });
 });

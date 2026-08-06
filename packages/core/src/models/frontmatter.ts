@@ -15,4 +15,5 @@ export const FrontmatterSchema = z
   })
   .passthrough();
 
+export type FrontmatterInput = z.input<typeof FrontmatterSchema>;
 export type Frontmatter = z.infer<typeof FrontmatterSchema>;

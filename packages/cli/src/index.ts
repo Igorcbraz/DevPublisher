@@ -80,8 +80,9 @@ program
             core.info(
               `Successfully uploaded medium-exports artifact (ID: ${id}, size: ${size} bytes)`
             );
-          } catch (e: any) {
-            console.error('Failed to upload medium-exports artifact:', e.message);
+          } catch (e: unknown) {
+            const errMessage = e instanceof Error ? e.message : String(e);
+            console.error('Failed to upload medium-exports artifact:', errMessage);
           }
         }
       }
@@ -89,8 +90,9 @@ program
       if (result.failedArticles > 0) {
         process.exit(1);
       }
-    } catch (err: any) {
-      console.error('❌ Publication error:', err.message);
+    } catch (err: unknown) {
+      const errMessage = err instanceof Error ? err.message : String(err);
+      console.error('❌ Publication error:', errMessage);
       process.exit(1);
     }
   });
@@ -120,8 +122,9 @@ program
       console.log('');
 
       if (hasError) process.exit(1);
-    } catch (err: any) {
-      console.error('❌ Validation error:', err.message);
+    } catch (err: unknown) {
+      const errMessage = err instanceof Error ? err.message : String(err);
+      console.error('❌ Validation error:', errMessage);
       process.exit(1);
     }
   });
@@ -149,33 +152,36 @@ program
   .command('doctor')
   .description('Check system health, environment variables, and plugin configuration')
   .action(() => {
+    const engine = createEngine();
     console.log('\n🩺 DevPublisher Health Check:\n');
     console.log(`Node Version:        ${process.version}`);
     console.log(`Working Directory:   ${process.cwd()}`);
 
-    const hasDevtoKey = !!process.env.DEVTO_API_KEY;
-    console.log(
-      `DEVTO_API_KEY:       ${hasDevtoKey ? '✅ Set' : '⚠️ Missing (Set DEVTO_API_KEY for Dev.to publishing)'}`
+    const hasDevtoKey = !!(process.env.DEVTO_API_KEY || engine.config.platforms['devto']?.apiKey);
+    const hasTabnewsKey = !!(
+      process.env.TABNEWS_SESSION_ID || engine.config.platforms['tabnews']?.apiKey
     );
 
+    console.log(
+      `DEVTO_API_KEY:       ${hasDevtoKey ? '✅ Set (loaded from .env or environment)' : '⚠️ Missing (Set DEVTO_API_KEY in .env for Dev.to)'}`
+    );
+    console.log(
+      `TABNEWS_SESSION_ID:  ${hasTabnewsKey ? '✅ Set (loaded from .env or environment)' : '⚪ Optional (Set TABNEWS_SESSION_ID in .env for TabNews)'}`
+    );
 
-
-    const engine = createEngine();
     console.log(`Registered Plugins:  ${engine.listPlugins().length} active`);
     console.log('\nStatus: Ready for publishing 🚀\n');
   });
 
 program
   .command('init')
-  .description('Create a sample devpublisher.yml configuration file')
+  .description('Create sample configuration and .env files')
   .action(() => {
     const configPath = path.resolve(process.cwd(), 'devpublisher.yml');
-    if (fs.existsSync(configPath)) {
-      console.log('⚠️ devpublisher.yml already exists in current directory');
-      return;
-    }
+    const envExamplePath = path.resolve(process.cwd(), '.env.example');
 
-    const sampleYaml = `# DevPublisher Configuration File
+    if (!fs.existsSync(configPath)) {
+      const sampleYaml = `# DevPublisher Configuration File
 version: "1"
 
 source:
@@ -185,7 +191,10 @@ source:
 platforms:
   devto:
     enabled: true
-    apiKey: "\${DEVTO_API_KEY}"
+  tabnews:
+    enabled: false
+  medium:
+    enabled: false
 
 pipeline:
   validators:
@@ -196,9 +205,27 @@ pipeline:
     provider: "file"
     file: ".devpublisher/state.json"
 `;
+      fs.writeFileSync(configPath, sampleYaml, 'utf-8');
+      console.log('✅ Created devpublisher.yml');
+    } else {
+      console.log('ℹ️  devpublisher.yml already exists');
+    }
 
-    fs.writeFileSync(configPath, sampleYaml, 'utf-8');
-    console.log('✅ Created devpublisher.yml configuration file!');
+    if (!fs.existsSync(envExamplePath)) {
+      const sampleEnv = `# DevPublisher - Environment Variables
+# Copy this file to .env and set your credentials (never commit .env!):
+# cp .env.example .env
+
+DEVTO_API_KEY=your_devto_api_key_here
+TABNEWS_SESSION_ID=your_tabnews_session_id_here
+`;
+      fs.writeFileSync(envExamplePath, sampleEnv, 'utf-8');
+      console.log('✅ Created .env.example');
+    }
+
+    console.log(
+      '\n🔒 Safe credential setup: Put your API keys only in .env (already in .gitignore).\n'
+    );
   });
 
 function getActionArguments(): string[] {

@@ -1,7 +1,7 @@
 ---
-title: "Título direto, técnico, sem clickbait abusivo e sem emojis"
-slug: "titulo-direto-tecnico"
-source_url: "https://seu-blog-pessoal.com/artigo-original"
+title: 'Título direto, técnico, sem clickbait abusivo e sem emojis'
+slug: 'titulo-direto-tecnico'
+source_url: 'https://seu-blog-pessoal.com/artigo-original'
 published: false
 ---
 

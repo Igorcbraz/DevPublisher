@@ -1,8 +1,8 @@
-import { Frontmatter } from './frontmatter.js';
+import { Frontmatter, FrontmatterInput, FrontmatterSchema } from './frontmatter.js';
 
 export interface BlogPostOptions {
   filePath: string;
-  frontmatter: Frontmatter;
+  frontmatter: FrontmatterInput | Frontmatter;
   content: string;
   rawContent: string;
   checksum?: string;
@@ -17,7 +17,7 @@ export class BlogPost {
 
   constructor(options: BlogPostOptions) {
     this.filePath = options.filePath;
-    this.frontmatter = options.frontmatter;
+    this.frontmatter = FrontmatterSchema.parse(options.frontmatter);
     this.content = options.content;
     this.rawContent = options.rawContent;
     this.checksum = options.checksum ?? this.calculateChecksum(options.rawContent);

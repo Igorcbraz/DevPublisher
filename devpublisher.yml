@@ -1,0 +1,19 @@
+# DevPublisher Configuration File
+version: '1'
+
+source:
+  folder: 'content/blog'
+  match: '**/*.md'
+
+platforms:
+  devto:
+    enabled: true
+
+pipeline:
+  validators:
+    - frontmatter
+  transformers:
+    - canonical-url
+  tracking:
+    provider: 'file'
+    file: '.devpublisher/state.json'

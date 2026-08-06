@@ -111304,7 +111304,7 @@ var BlogPost = class {
   checksum;
   constructor(options2) {
     this.filePath = options2.filePath;
-    this.frontmatter = options2.frontmatter;
+    this.frontmatter = FrontmatterSchema.parse(options2.frontmatter);
     this.content = options2.content;
     this.rawContent = options2.rawContent;
     this.checksum = options2.checksum ?? this.calculateChecksum(options2.rawContent);
@@ -111714,12 +111714,10 @@ var FileLoaderPlugin = class {
       if (!fs3.existsSync(filePath)) continue;
       const rawContent2 = fs3.readFileSync(filePath, "utf-8");
       const { data, content } = (0, import_gray_matter.default)(rawContent2);
-      const parsedFrontmatter = FrontmatterSchema.safeParse(data);
-      const frontmatter = parsedFrontmatter.success ? parsedFrontmatter.data : data;
       posts.push(
         new BlogPost({
           filePath,
-          frontmatter,
+          frontmatter: data,
           content,
           rawContent: rawContent2
         })
@@ -112064,6 +112062,7 @@ var fs4 = __toESM(require("fs"), 1);
 var path5 = __toESM(require("path"), 1);
 var ConfigLoader = class _ConfigLoader {
   static load(configPath, overrides) {
+    _ConfigLoader.loadEnv();
     let rawConfig = {};
     const targetPath = configPath || "devpublisher.yml";
     const absolutePath = path5.resolve(process.cwd(), targetPath);
@@ -112078,20 +112077,27 @@ var ConfigLoader = class _ConfigLoader {
     const merged = {
       ...rawConfig,
       ...overrides,
-      source: {
-        ...rawConfig["source"],
-        ...overrides?.source
-      },
-      platforms: {
-        ...rawConfig["platforms"],
-        ...overrides?.platforms
-      },
-      pipeline: {
-        ...rawConfig["pipeline"],
-        ...overrides?.pipeline
-      }
+      source: overrides?.source ? { ...rawConfig["source"], ...overrides.source } : rawConfig["source"] || {},
+      platforms: overrides?.platforms ? overrides.platforms : rawConfig["platforms"] || {},
+      pipeline: overrides?.pipeline ? { ...rawConfig["pipeline"], ...overrides.pipeline } : rawConfig["pipeline"] || {}
     };
     return DevPublisherConfigSchema.parse(merged);
+  }
+  static loadEnv(customPath) {
+    const envPath = customPath ? path5.resolve(process.cwd(), customPath) : path5.resolve(process.cwd(), ".env");
+    if (fs4.existsSync(envPath)) {
+      const content = fs4.readFileSync(envPath, "utf-8");
+      for (const line of content.split("\n")) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith("#") || !trimmed.includes("=")) continue;
+        const idx = trimmed.indexOf("=");
+        const key = trimmed.substring(0, idx).trim();
+        const value = trimmed.substring(idx + 1).trim().replace(/^['"]|['"]$/g, "");
+        if (!process.env[key]) {
+          process.env[key] = value;
+        }
+      }
+    }
   }
   static parseSimpleYaml(content) {
     const result = {};
@@ -112102,17 +112108,41 @@ var ConfigLoader = class _ConfigLoader {
       const trimmed = line.trim();
       if (!trimmed || trimmed.startsWith("#")) continue;
       const indent = line.search(/\S/);
+      if (trimmed.startsWith("- ")) {
+        const itemVal = _ConfigLoader.parseYamlValue(trimmed.substring(2).trim());
+        if (currentSection && currentSubSection) {
+          if (!Array.isArray(result[currentSection][currentSubSection])) {
+            result[currentSection][currentSubSection] = [];
+          }
+          result[currentSection][currentSubSection].push(itemVal);
+        } else if (currentSection) {
+          if (!Array.isArray(result[currentSection])) {
+            result[currentSection] = [];
+          }
+          result[currentSection].push(itemVal);
+        }
+        continue;
+      }
       if (indent === 0 && line.includes(":")) {
-        const [key] = line.split(":");
-        currentSection = key.trim();
-        currentSubSection = null;
-        if (!result[currentSection]) result[currentSection] = {};
+        const parts = line.split(":");
+        const key = parts[0].trim();
+        const val = parts.slice(1).join(":").trim();
+        if (val) {
+          result[key] = _ConfigLoader.parseYamlValue(val);
+          currentSection = null;
+          currentSubSection = null;
+        } else {
+          currentSection = key;
+          currentSubSection = null;
+          if (!result[currentSection]) result[currentSection] = {};
+        }
       } else if (indent === 2 && currentSection && line.includes(":")) {
         const parts = line.split(":");
         const key = parts[0].trim();
         const val = parts.slice(1).join(":").trim();
         if (val) {
           result[currentSection][key] = _ConfigLoader.parseYamlValue(val);
+          currentSubSection = null;
         } else {
           currentSubSection = key;
           if (!result[currentSection][currentSubSection]) {
@@ -112131,13 +112161,15 @@ var ConfigLoader = class _ConfigLoader {
   static parseYamlValue(val) {
     if (val === "true") return true;
     if (val === "false") return false;
-    if (val.startsWith('"') && val.endsWith('"')) return val.slice(1, -1);
-    if (val.startsWith("'") && val.endsWith("'")) return val.slice(1, -1);
-    if (val.startsWith("${") && val.endsWith("}")) {
-      const envKey = val.slice(2, -1);
+    let cleaned = val;
+    if (cleaned.startsWith('"') && cleaned.endsWith('"') || cleaned.startsWith("'") && cleaned.endsWith("'")) {
+      cleaned = cleaned.slice(1, -1);
+    }
+    if (cleaned.startsWith("${") && cleaned.endsWith("}")) {
+      const envKey = cleaned.slice(2, -1);
       return process.env[envKey] || "";
     }
-    return val;
+    return cleaned;
   }
 };
 
@@ -112642,7 +112674,8 @@ program2.command("publish").argument("[target]", "Markdown file or directory to 
             `Successfully uploaded medium-exports artifact (ID: ${id}, size: ${size} bytes)`
           );
         } catch (e) {
-          console.error("Failed to upload medium-exports artifact:", e.message);
+          const errMessage = e instanceof Error ? e.message : String(e);
+          console.error("Failed to upload medium-exports artifact:", errMessage);
         }
       }
     }
@@ -112650,7 +112683,8 @@ program2.command("publish").argument("[target]", "Markdown file or directory to 
       process.exit(1);
     }
   } catch (err) {
-    console.error("\u274C Publication error:", err.message);
+    const errMessage = err instanceof Error ? err.message : String(err);
+    console.error("\u274C Publication error:", errMessage);
     process.exit(1);
   }
 });
@@ -112673,7 +112707,8 @@ program2.command("validate").argument("[target]", "Markdown file or directory to
     console.log("");
     if (hasError) process.exit(1);
   } catch (err) {
-    console.error("\u274C Validation error:", err.message);
+    const errMessage = err instanceof Error ? err.message : String(err);
+    console.error("\u274C Validation error:", errMessage);
     process.exit(1);
   }
 });
@@ -112692,24 +112727,26 @@ program2.command("list").description("List all registered plugins and publisher 
   console.log("");
 });
 program2.command("doctor").description("Check system health, environment variables, and plugin configuration").action(() => {
+  const engine = createEngine();
   console.log("\n\u{1FA7A} DevPublisher Health Check:\n");
   console.log(`Node Version:        ${process.version}`);
   console.log(`Working Directory:   ${process.cwd()}`);
-  const hasDevtoKey = !!process.env.DEVTO_API_KEY;
+  const hasDevtoKey = !!(process.env.DEVTO_API_KEY || engine.config.platforms["devto"]?.apiKey);
+  const hasTabnewsKey = !!(process.env.TABNEWS_SESSION_ID || engine.config.platforms["tabnews"]?.apiKey);
   console.log(
-    `DEVTO_API_KEY:       ${hasDevtoKey ? "\u2705 Set" : "\u26A0\uFE0F Missing (Set DEVTO_API_KEY for Dev.to publishing)"}`
+    `DEVTO_API_KEY:       ${hasDevtoKey ? "\u2705 Set (loaded from .env or environment)" : "\u26A0\uFE0F Missing (Set DEVTO_API_KEY in .env for Dev.to)"}`
   );
-  const engine = createEngine();
+  console.log(
+    `TABNEWS_SESSION_ID:  ${hasTabnewsKey ? "\u2705 Set (loaded from .env or environment)" : "\u26AA Optional (Set TABNEWS_SESSION_ID in .env for TabNews)"}`
+  );
   console.log(`Registered Plugins:  ${engine.listPlugins().length} active`);
   console.log("\nStatus: Ready for publishing \u{1F680}\n");
 });
-program2.command("init").description("Create a sample devpublisher.yml configuration file").action(() => {
+program2.command("init").description("Create sample configuration and .env files").action(() => {
   const configPath = path14.resolve(process.cwd(), "devpublisher.yml");
-  if (fs12.existsSync(configPath)) {
-    console.log("\u26A0\uFE0F devpublisher.yml already exists in current directory");
-    return;
-  }
-  const sampleYaml = `# DevPublisher Configuration File
+  const envExamplePath = path14.resolve(process.cwd(), ".env.example");
+  if (!fs12.existsSync(configPath)) {
+    const sampleYaml = `# DevPublisher Configuration File
 version: "1"
 
 source:
@@ -112719,7 +112756,10 @@ source:
 platforms:
   devto:
     enabled: true
-    apiKey: "\${DEVTO_API_KEY}"
+  tabnews:
+    enabled: false
+  medium:
+    enabled: false
 
 pipeline:
   validators:
@@ -112730,8 +112770,25 @@ pipeline:
     provider: "file"
     file: ".devpublisher/state.json"
 `;
-  fs12.writeFileSync(configPath, sampleYaml, "utf-8");
-  console.log("\u2705 Created devpublisher.yml configuration file!");
+    fs12.writeFileSync(configPath, sampleYaml, "utf-8");
+    console.log("\u2705 Created devpublisher.yml");
+  } else {
+    console.log("\u2139\uFE0F  devpublisher.yml already exists");
+  }
+  if (!fs12.existsSync(envExamplePath)) {
+    const sampleEnv = `# DevPublisher - Environment Variables
+# Copy this file to .env and set your credentials (never commit .env!):
+# cp .env.example .env
+
+DEVTO_API_KEY=your_devto_api_key_here
+TABNEWS_SESSION_ID=your_tabnews_session_id_here
+`;
+    fs12.writeFileSync(envExamplePath, sampleEnv, "utf-8");
+    console.log("\u2705 Created .env.example");
+  }
+  console.log(
+    "\n\u{1F512} Safe credential setup: Put your API keys only in .env (already in .gitignore).\n"
+  );
 });
 function getActionArguments() {
   const file = process.env.INPUT_FILE?.trim();
