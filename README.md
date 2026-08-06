@@ -77,6 +77,7 @@ pipeline:
 To publish articles to your target platforms, DevPublisher needs authentication credentials. You can set these credentials as environment variables or configure them directly inside `devpublisher.yml`.
 
 ### 1. Dev.to (`DEVTO_API_KEY`)
+
 1. Log in to [Dev.to](https://dev.to).
 2. Go to **Settings** (click your profile picture -> Settings).
 3. Select **Extensions** in the left sidebar.
@@ -88,7 +89,9 @@ To publish articles to your target platforms, DevPublisher needs authentication 
    ```
 
 ### 2. TabNews (`TABNEWS_SESSION_ID`)
+
 TabNews uses a session cookie token for authentication. To retrieve your session ID:
+
 1. Log in to [TabNews](https://www.tabnews.com.br).
 2. Open your browser's **Developer Tools** (F12 or right-click -> Inspect).
 3. Navigate to the **Application** (Chrome/Edge) or **Storage** (Firefox) tab.
@@ -184,15 +187,18 @@ DevPublisher isn't just about syndicating existing content; it also provides an 
 You can easily port this skill into any third-party project to automate your technical marketing.
 
 #### Pré-requisitos
+
 - You must be using an agentic AI assistant (like Google Antigravity or similar) capable of running local file-based skills.
 - A product context file describing what your project does, its target audience, technical stack, and differentials.
 
 #### Passo a Passo de Instalação e Configuração
+
 1. **Copie a Skill**: Copy the entire `.agents/skills/blog-writer/` directory from this DevPublisher repository into your own project (e.g., at `your-project/.agents/skills/blog-writer/`).
 2. **Crie seu Contexto de Produto**: Create a `PRODUCT.md` file anywhere in your project (e.g., at the root, or inside `docs/` or `blog/`). Write down the truth about your product's architecture and value proposition.
 3. **Plataformas Configuráveis**: The skill supports Dev.to, TabNews, and HackerNoon, but you don't have to use all of them. The templates in `.agents/skills/blog-writer/templates/` dictate the required fields for each platform. You can explicitly request the agent to target just one or multiple platforms.
 
 #### Exemplo de Invocação Genérica
+
 When interacting with your AI agent in your project, use a prompt like this:
 
 > "Por favor, use a skill `blog-writer` para gerar um post no formato 'Listicle' focado na plataforma **dev.to**. O contexto do produto está no arquivo `docs/PRODUCT.md`. Salve o resultado final na pasta `blog/` do projeto."
